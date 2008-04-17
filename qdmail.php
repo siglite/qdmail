@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.0a
+ * Qdmail ver 0.7.1a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.0a
+ * @version			0.7.1a
  * @lastmodified	2008-04-15
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
@@ -37,7 +37,7 @@ class QdmailBase{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.0a';
+	var	$version		= '0.7.1a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -686,6 +686,14 @@ class QdmailBase{
 		$stack['HEADER'] = $charset;
 		return $this->charset( $stack );
 	}
+	function charsetAttach( $charset = null ){
+		if(is_null($charset)){
+			return $this->charset_attach_filename ;
+		}
+		$stack = $this->charset();
+		$stack['HEADER'] = $charset;
+		return $this->charset( $stack );
+	}
 	function charsetBody( $charset = null , $enc = null ){
 		if( is_null($charset) && is_null($enc) ){
 			return array($this->charset_content , $this->content_transfer_enc_text , content_transfer_enc_html) ;
@@ -1196,11 +1204,11 @@ class QdmailBase{
 				$fg = $this->sendBySmtp();
 			}else{
 				$fg = mail( 
-					  $this->header_for_mailfunction_to
-					, $this->header_for_mailfunction_subject
-					, $this->content_for_mailfunction
-					, $this->header_for_mailfunction_other
-					, $sendmail_option
+					  trim( $this->header_for_mailfunction_to )
+					, trim( $this->header_for_mailfunction_subject )
+					, trim( $this->content_for_mailfunction )
+					, trim( $this->header_for_mailfunction_other )
+					, trim( $sendmail_option )
 				);
 			}
 
