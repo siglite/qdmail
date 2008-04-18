@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.1a
+ * Qdmail ver 0.7.2a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.1a
+ * @version			0.7.2a
  * @lastmodified	2008-04-15
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
@@ -37,7 +37,7 @@ class QdmailBase{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.1a';
+	var	$version		= '0.7.2a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -462,6 +462,7 @@ class QdmailBase{
 		'force_change_charset'	=> 'bool' ,
 		'error_display'		=> 'bool' ,
 		'smtp'				=> 'bool' ,
+		'inline_mode'		=> 'bool' ,
 		'attach_path'		=> 'string' ,
 		'mta_option'		=> 'string' ,
 		'rep_prefix'		=> 'string' ,
@@ -572,6 +573,9 @@ class QdmailBase{
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function smtp( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function inlineMode( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	//---------------------------------------
@@ -1807,12 +1811,13 @@ class QdmailBase{
 	//           attachFull - Base Routine  allattch routine call him
 	// buildAttach - called buildBody method
 	//------------------------------------------------------------------------
-	function attach( $path_filename , $attach_name = null , $add = false , $mime_type = null , $inline = false , $target_charset = null , $charset_org = null ){
+	function attach( $path_filename , $attach_name = null , $add = false , $mime_type = null , $inline = null , $target_charset = null , $charset_org = null ){
 
 		list( $stack , $this->attach ) = array( $this->attach , array() );
-
+		if( !isset($inline) ){// ver0.7.2a
+			$inline = $this->inline_mode ;
+		}
 		if(is_string($path_filename)){
-
 			$this->attachSingle( $path_filename , $attach_name , $mime_type , $inline , $target_charset , $charset_org );
 
 		}elseif( is_array($path_filename) && isset( $path_filename['PATH']) ){
@@ -1955,6 +1960,10 @@ class QdmailBase{
 
 		//is Inline ?
 		if( $inline ){
+
+echo "ddddddddddddddddddddd";
+
+
 			$id = $this->makeContentId($one['CONTENT-ID']);
 			$content_id =  '<' . $id . '>' ;
 			$content_disposition = 'inline';//attachment for au?
