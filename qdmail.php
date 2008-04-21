@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.2a
+ * Qdmail ver 0.7.3a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.2a
+ * @version			0.7.3a
  * @lastmodified	2008-04-15
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
@@ -37,7 +37,7 @@ class QdmailBase{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.2a';
+	var	$version		= '0.7.3a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -96,13 +96,20 @@ class QdmailBase{
 	// wordwrap
 	//---------
 	var	$wordwrap_allow	= true;
+	var	$wrap_prohibit_allow	= true;
 	var $wordwrap_length= 45 ;
 	// inteligent wordwrap
 	// false is that the word exist in the line ,
 	// true is that the word must be the beginning of a line 
-	var	$wrap_except	= array('http://'=>false,'code'=>true);
+	var	$wrap_except	= array(
+		'http://'=>false,
+		'code'=>true,
+	);
+	var $wrap_prohibit_top=',.;:–?!‼、。．)）]}｝〕〉》」』】〙〗〟’”»ヽヾーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎ‐〜？！';
+	var $wrap_prohibit_end='（([{｛〔〈《「『【〘〖‘“« ';
+	var $wrap_prohibit = array();
 	// multibyte wordwrap , by wordcount or by wordwidth
-	var	$wrap_whidth	= true;
+	var	$wrap_width	= true;
 	// multibyte wordwidth compare by ascii
 	var	$mb_strwidth_magni = 2;
 	//------------------
@@ -351,6 +358,7 @@ class QdmailBase{
 			$this->error_display = $param[2];
 		}
 		$this->optionNameLink();
+		$this->wordwrapProhibitConstructor();
 	}
 	//-------------------
 	// Easy Base
@@ -457,8 +465,9 @@ class QdmailBase{
 		'auto_ext'			=> 'bool' ,
 		'body_empty_allow'	=> 'bool' ,
 		'ignore_error'		=> 'bool' ,
-		'wrap_whidth'		=> 'bool' ,
+		'wrap_width'		=> 'bool' ,
 		'wordwrap_allow'	=> 'bool' ,
+		'wrap_prohibit_allow'=> 'bool' ,
 		'force_change_charset'	=> 'bool' ,
 		'error_display'		=> 'bool' ,
 		'smtp'				=> 'bool' ,
@@ -471,6 +480,9 @@ class QdmailBase{
 		'log_filename'		=> 'string' ,
 		'errorlog_filename'	=> 'string' ,
 		'allways_bcc'		=> 'string' ,
+		'wrap_prohibit_top'	=> 'string' ,
+		'wrap_prohibit_end'	=> 'string' ,
+		'mb_strwidth_magni'	=> 'numeric' ,
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
 		'errorlog_level'	=> 'numeric' ,
@@ -528,6 +540,7 @@ class QdmailBase{
 						return $this->errorSpecify( __FUNCTION__ . '-' .$key , __LINE__ . $line );
 					}else{
 						$this->{$property_name} = $value ;
+
 						$ret[0] = true ;
 					}
 				break;
@@ -552,6 +565,7 @@ class QdmailBase{
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function simpleReplace( $bool = null ){
+		$this->toSeparate( $bool );
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function autoDecoJudge( $bool = null ){
@@ -639,8 +653,35 @@ class QdmailBase{
 	// if beginning flag is true , beginning of a line is target
 	// if beginning flag is true , the word in line is target
 	//-----------------------------------------------------------
+	function wordwrapProhibitConstructor(){
+		$ret = $this->strToArrayKey( $this->wrap_prohibit_top , true );
+		$ret2 = $this->strToArrayKey( $this->wrap_prohibit_end , false );
+		$this->wrap_prohibit = array_merge( $ret , $ret2 );
+	}
+	function strToArrayKey( $word , $value ){
+		$ret = array();
+		$enc = mb_detect_encoding( $word );
+		$length = mb_strlen( $word , $enc );
+		for( $i=0 ; $i < $length ; $i++ ){
+			$ret[ mb_substr( $word , $i , 1 , $enc ) ] = $value;
+		}
+		return $ret;
+	}
 	function wordwrapAllow( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function wrapProhibitAllow( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function wrapProhibitEnd( $option = null ){
+		$this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+		$this->wordwrapProhibitConstructor();
+		return  $this->errorGather();
+	}
+	function wrapProhibitTop( $option = null ){
+		$this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+		$this->wordwrapProhibitConstructor();
+		return  $this->errorGather();
 	}
 	function wrapWidth( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
@@ -654,6 +695,9 @@ class QdmailBase{
 		}
 		$this->wordwrap_length = $length;
 		return $this->errorGather() ;
+	}
+	function mbStrwidthMagni( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__, 0 , 10 );
 	}
 	function wrapExcept( $array = null ){
 		if( null === $array ){
@@ -777,6 +821,7 @@ class QdmailBase{
 		}
 		return $ret;
 	}
+
 	// Change Decoration Pattern by E-mail Address
 	function decoJudge( $addr_array ){
 		$addr=$addr_array['ADDR'];
@@ -801,45 +846,92 @@ class QdmailBase{
 	//------------------------------------
 	//
 	// Word Replace
+	// $this->replace property sturucture is folling.
 	//
-	// array(
-	//	'NAME'	=> name,
-	//	'ADDR'	=> addr,
-	//	0	=> word0,
-	//	1	=> word1,
-	//	2	=> word2,
-	// ...	=> word3,
+	//	array(
+	//		0 =>array(
+	//			'NAME' => 'to name',
+	//			'ADDR' => 'to address',
+	//			0 => 'prelaceword_0' ,
+	//			1 => 'prelaceword_1' ,
+	//			2 => 'prelaceword_2' ,
+	//			3 => 'prelaceword_3' ,
+	//		),
+	//		1 =>array(
+	//			'NAME' => 'to name',
+	//			'ADDR' => 'to address',
+	//			0 => 'prelaceword_0' ,
+	//			1 => 'prelaceword_1' ,
+	//			2 => 'prelaceword_2' ,
+	//			3 => 'prelaceword_3' ,
+	//		),
 	//	)
+	//
+	// first demension KEY must related $this->to array's KEY
+	// second demension KEY must related number %n% in body text
+	// You can omitt 'NAME' and 'ADDR' key and the value,
+	// then Qdmail automatically will add these key and value.
+	//
+	// **anather type
+	//	array(
+	//		'recipt address1' =>array(
+	//			'NAME' => 'to name',
+	//			'ADDR' => 'to address',
+	//			0 => 'prelaceword_0' ,
+	//			1 => 'prelaceword_1' ,
+	//			2 => 'prelaceword_2' ,
+	//			3 => 'prelaceword_3' ,
+	//		),
+	//		'recipt address2' =>array(
+	//			'NAME' => 'to name',
+	//			'ADDR' => 'to address',
+	//			0 => 'prelaceword_0' ,
+	//			1 => 'prelaceword_1' ,
+	//			2 => 'prelaceword_2' ,
+	//			3 => 'prelaceword_3' ,
+	//		),
+	//	)
+	// first demension KEY must related $this->to array's MailAddress
+	// second demension KEY must related number %n% in body text
+	//
 	// You can add prefix by $this->rep_prefix proparty
 	// OR $this->repPrefix() Method (Recommended)
 	// notice: this functino need on utf-8
 	// OR $this->qdmail_system_charset need utf-8
 	//------------------------------------
-	function replaceWord( $array = null ){
+	function replaceWord( $array = null , $add = false ){
 		if( is_null( $array ) ){
 			return $this->replace ;
 		}
 		if( !is_array( $array ) ){
 			$array = array( $array );
 		}
-		$this->replace = array_change_key_case( $array , CASE_UPPER ); 
+		foreach($array as $key => $arr){
+			if( !is_array( $arr ) ){
+				$array[$key] = array( $arr );
+			}else{
+				$array[$key] = array_change_key_case( $array[$key] , CASE_UPPER ); 
+			}
+		}
+		if( $add ){
+			$this->replace = array_merge( $this->replace , $array ); 
+		}else{
+			$this->replace = $array ; 
+		}
 		return $this->errorGather() ;
 	}
 	function repPrefix( $option = null ){
 		return $this->stringOption( __FUNCTION__ , $option , __LINE__ );
 	}
-	function replace( $cont , $rep = null ){
-		if( is_null( $rep ) ){
-			$rep = $this->replace ;
-		}
+	function replace( $cont , $rep ){
 		$reg = '/%'.$this->rep_prefix.'name%/is';
 		$cont = $this->qdmail_preg_replace( $reg , $rep['NAME'] , $cont );
 		$reg = '/%'.$this->rep_prefix.'address%/is';
 		$cont = $this->qdmail_preg_replace( $reg , $rep['ADDR'] , $cont );
 		unset($rep['NAME'],$rep['ADDR']);
 		$mx = count($rep);
-		for( $i=0 ; $i<$mx ; $i++ ){
-			$reg = '/%'.$this->rep_prefix.$i.'%/is';
+		for( $i=0 ; $i < $mx ; $i++ ){
+			$reg = '/%' . $this->rep_prefix . $i . '%/is';
 			$cont = $this->qdmail_preg_replace( $reg , $rep[$i] , $cont );
 		}
 		return $cont ;
@@ -998,9 +1090,9 @@ class QdmailBase{
 		$ret = array();
 		if( empty( $name ) || !is_array( $name ) ){
 			if(isset($addr['ADDR'])){
-				$name = isset($addr['NAME']) ? $addr['NAME']:null;
+				$addr['NAME'] = isset($addr['NAME']) ? $addr['NAME']:null;
 				if( !empty($addr) ){
-					return array(array( 'ADDR' => $addr['ADDR'] , 'NAME' => $name ));
+					return array( $addr );//ver 0.7.3a
 				}else{
 					return array();
 				}
@@ -1010,7 +1102,7 @@ class QdmailBase{
 					$_addr = isset( $ad['ADDR'] ) ?  $this->extractAddr( $ad['ADDR'] ) : $this->extractAddr( $ad[0] ) ;
 					if(isset( $ad['NAME'] ) ){
 						$_name = $ad['NAME'];
-					}elseif(isset( $ad[1] ) ){
+					}elseif( isset( $ad[1] ) ){
 						$_name = $ad[1];
 					}else{
 						$_name = null;
@@ -1082,7 +1174,6 @@ class QdmailBase{
 		);
 
 	}
-
 	//-------------------------------------------
 	// Main Routine Send()
 	//   Option analyize
@@ -1110,8 +1201,7 @@ class QdmailBase{
 		$this->header['X-Mailer'] = $this->xmailer . ' ' . $this->version ;
 		$this->header['license'] = $this->license ;
 	}
-	function send( $header = array(), $content = array() , $attach  = array() , $option = array() ){
-		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
+	function send( $header = array() , $content = array() , $attach  = array() , $option = array() ){
 		//----------------
 		// analysis Option
 		//----------------
@@ -1128,30 +1218,33 @@ class QdmailBase{
 		if( isset( $option['PEPLACE'] ) ){
 			$this->replaceWord( $option['PEPLACE'] );
 		}
-		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
 		// deco mode
 		if( isset( $option['DECO_KIND'] ) ){
 			$this->deco_kind = $this->decoFix( $option['DECO_KIND'] );
 		}elseif( !isset( $this->deco_kind ) && $this->auto_deco_judge ){
 			$this->deco_kind = $this->decoJudge($this->to[0]);
 		}
-		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
 		list( $header , $link_hd )= $this->setAddr( $header ); // must need for toSeparate mode
 		$fg = true;
 		if( true === $this->toSeparate() ){
-			if( empty( $this->to ) ){
-				$fg = $this->errorGather('To Header is not exsit line' ,__LINE__) ;
+
+			$stack_tos = array( $this->to , $this->cc , $this->bcc );
+			$tos = $this->to ;
+			$this->cc( false ) ;
+			$this->bcc( false ) ;
+			if( empty( $tos ) ){
+				$fg = $this->errorGather('Receipt Header is not exsit line' ,__LINE__) ;
 			}else{
 				// To Separate mode
-				$tos = array_merge( $this->to , $this->cc , $this->bcc );
-				$this->cc( false ) ;
-				$this->bcc( false ) ;
-				foreach($tos as $to){
-					$this->to( $to , null , false );
-					if($this->auto_deco_judge){
-						$this->deco_kind = $this->decoJudge($this->to[0]);
+				foreach($tos as $key => $to){
+					if( $this->simple_replace ){
+						$to['REPLACE'] = isset( $to['REPLACE'] ) ? $to['REPLACE'] : $this->selectReplace( $to , $key ) ;
 					}
-					if($this->sendBase( $header , $content , $attach , $option )){
+					$this->to( $to , null , false );
+					if( $this->auto_deco_judge ){
+						$this->deco_kind = $this->decoJudge( $this->to[0] );
+					}
+					if( $this->sendBase( $header , $content , $attach , $option ) ){
 						$this->is_create = false; // for next to
 						continue ;
 					}else{
@@ -1159,6 +1252,8 @@ class QdmailBase{
 					}
 				}
 			}
+			list( $this->to , $this->cc , $this->bcc ) = $stack_tos ;
+
 		}else{
 			// normal mode the end
 			$fg = $this->sendBase( $header , $content , $attach , $option ) ;
@@ -1173,9 +1268,21 @@ class QdmailBase{
 		}
 	}
 
-	function sendBase( $header = array(), $content = array() , $attach  = array() , $option = array() ){
-		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
-		// stack bcc for allways bcc
+	function selectReplace( $to , $key ){
+		$ret = array();
+		if( isset( $this->replace[$to['ADDR']] ) ){
+			$ret = $this->replace[$to['ADDR']];
+		}elseif( isset( $this->replace[$key] ) ){
+			$ret = $this->replace[$key];
+		}else{
+			return $this->errorGather('No Replacements in SimpleReplace' ,__LINE__) ;
+		}
+		$ret['ADDR'] = $to['ADDR'] ;
+		$ret['NAME'] = isset( $to['NAME'] ) ? $to['NAME'] : null ;
+		return $ret ;
+	}
+
+	function sendBase( $header = array(), $content = array() , $attach  = array() , $option = array() ){		// stack bcc for allways bcc
 		unset( $stack_bcc ) ;
 		if( 0 != count( $this->allways_bcc ) ){
 			$stack_bcc = $this->bcc ;
@@ -1186,7 +1293,6 @@ class QdmailBase{
 			$this->after_id = null;
 			$this->createMail( $header , $content , $attach , $option );
 		}
-
 		if( isset($option) && !empty($option) ){
 			list( $option , $void ) = $this->keyUpper( $option );
 		}
@@ -1210,7 +1316,7 @@ class QdmailBase{
 				$fg = mail( 
 					  trim( $this->header_for_mailfunction_to )
 					, trim( $this->header_for_mailfunction_subject )
-					, trim( $this->content_for_mailfunction )
+					, $this->content_for_mailfunction
 					, trim( $this->header_for_mailfunction_other )
 					, trim( $sendmail_option )
 				);
@@ -1270,7 +1376,6 @@ class QdmailBase{
 	//  Create one mail
 	//-----------------------------------------------
 	function createMail( $header = array() , $content = array() , $attach  = array() , $option = array() ){
-		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
 		$this->_charsetDefFix();
 
 		if( 0 != count($header) ){
@@ -1342,7 +1447,6 @@ class QdmailBase{
 		if( 0 != count($attach)){
 			$this->attach( $attach , null , true );
 		}
-
 		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
 		// Select Body Structure
 		if( empty( $this->attach ) || !isset( $this->deco_kind ) ){
@@ -1361,13 +1465,10 @@ class QdmailBase{
 			}
 			$this->header = array_merge($this->header,$_header);
 		}
-
 		$this->headerDefault();
 		$this->renderHeader();
-
 		$this->is_create=true;
 	}
-
 	//except Content-type,user option
 	function buildHeader(){
 		$this->header = array();
@@ -1395,9 +1496,7 @@ class QdmailBase{
 		if( !empty( $this->subject ) ){
 			//replace
 			if( $this->simple_replace ){
-				$this->replace['NAME']= $this->to[0]['NAME'];
-				$this->replace['ADDR']= $this->to[0]['ADDR'];
-				$subj = $this->replace( $this->subject['CONTENT'] );
+				$subj = $this->replace( $this->subject['CONTENT'] , $this->to[0]['REPLACE'] );
 			}else{
 				$subj = $this->subject['CONTENT'] ;
 			}
@@ -1496,16 +1595,14 @@ class QdmailBase{
 						list( $content , $charset , $enc ) = $this->makeContentText( $this->content['HTML'] , 'HTML' );
 						$ret_header['Content-Type'] = 'text/html; charset="' . $charset . '"';
 						$ret_header['Content-Transfer-Encoding'] = $enc ;
-						$ret_cont = trim($content) ;
+						$ret_cont = $content ;
 
 					break;
 					case 'plain':
-
 						list( $content , $charset , $enc ) = $this->makeContentText( $this->content['TEXT'] , 'TEXT' );
 						$ret_header['Content-Type'] = 'text/plain; charset="' . $charset . '"';
 						$ret_header['Content-Transfer-Encoding'] = $enc ;
-						$ret_cont = trim($content) ;
-
+						$ret_cont = $content ;
 					break;
 					case 'omit':
 						$one = null;
@@ -1532,7 +1629,7 @@ class QdmailBase{
 			$body_structure[0]['BOUNDARY'] = null;
 			$body_structure[0]['HEADER'] = array();
 		}
-		$this->content_for_mailfunction = trim( $this->finalize( $body_structure ) );
+		$this->content_for_mailfunction = preg_replace('/\\'.$this->LFC.'\\'.$this->LFC.'$/','',$this->finalize( $body_structure ));
 	}
 
 	function finalize( $array ){
@@ -1548,7 +1645,7 @@ class QdmailBase{
 				if( !empty( $header ) ){
 					$header .= $this->LFC . $this->LFC ; 
 				}
-				$add = $bd . $header . trim( $ar['CONTENT'] ) ;
+				$add = $bd . $header .  $ar['CONTENT']  ;
 				$this->body =  $this->body . $add . $this->LFC . $this->LFC ;
 			}
 		}
@@ -1574,7 +1671,6 @@ class QdmailBase{
 		return $boundary;
 	}
 	function makeContentText( $content , $is_text = 'TEXT' ){
-
 		$flag_wrp = ( 'TEXT' == $is_text ) ? true:false;
 		$enc = ( 'HTML' == $is_text ) ? $this->content_transfer_enc_html : $this->content_transfer_enc_text ;
 
@@ -1594,7 +1690,7 @@ class QdmailBase{
 		$content = $this->clean($content);
 		// Content_replace
 		if( $this->simple_replace ){
-			$content = $this->replace( $content );
+			$content = $this->replace( $content , $this->to[0]['REPLACE'] );
 		}
 		// Content-id replace
 		$content = $this->replaceCid( $content );
@@ -1608,7 +1704,6 @@ class QdmailBase{
 				$content = call_user_func( array($temp[0],$temp[1]) , $content);
 			}
 		}
-
 		if( $this->wordwrap_allow && $flag_wrp && false !== $length ){
 			$content = $this->mbWordwrap( $content , $length );
 		}
@@ -1960,10 +2055,6 @@ class QdmailBase{
 
 		//is Inline ?
 		if( $inline ){
-
-echo "ddddddddddddddddddddd";
-
-
 			$id = $this->makeContentId($one['CONTENT-ID']);
 			$content_id =  '<' . $id . '>' ;
 			$content_disposition = 'inline';//attachment for au?
@@ -2083,13 +2174,13 @@ echo "ddddddddddddddddddddd";
 		if( 1 > $length ){
 			$this->error[]='Wordwrap length illegal , need more than 1 line->'.__LINE__;
 		}
-		$ret = null;
+		$ret = array();
 		$word = $this->clean( $word );
 		$lines = explode( $this->LFC , $word ) ;
 		foreach($lines as $line){
-			$ret .= $this->mbWordwrapLine( $line , $length ) . $this->LFC;
+			$ret []= $this->mbWordwrapLine( $line , $length );
 		}
-		return $ret;
+		return implode( $this->LFC , $ret );;
 	}
 
 	function mbWordwrapLine( $line , $length ){
@@ -2106,23 +2197,38 @@ echo "ddddddddddddddddddddd";
 		$enc = mb_detect_encoding( $line );
 		$len = mb_strlen( $line , $enc );
 		if ( ( $len <= $length )  || $skip ) {
-			return trim($line);
+			return $line;
 		}
 
-		if( $this->wrap_whidth ){
+		if( $this->wrap_width ){
 			$method = 'widthSubStr';
 		}else{
 			$method = 'defMbSubStr';
 		}
 
-		$ret = null;
+		$ret = array();
 		$ln = $length;
-
+		$j = 0;
 		for( $i=0; $i < $len ; $i += $ln ){
-			list( $r ,$ln ) = $this->{$method}( $line , $i , $length , $enc );
-			$ret .= $r. $this->LFC ;
+			list( $r , $ln ) = $this->{$method}( $line , $i , $length , $enc );
+			if( 0 !== $j ){
+				list( $r , $no_top , $flag )=$this->mbProhibitTop( $r , $enc );
+				if( $flag ){
+					$ret[$j-1] .= $no_top ;
+					$i += mb_strlen( $no_top , $enc );
+					list( $r , $ln ) = $this->{$method}( $line , $i , $length , $enc );
+				}
+			}
+			if( ( $i + $ln ) < $len  ){
+				list( $_r , $ret_count , $flag )=$this->mbProhibitEnd( $r , $enc );
+				if( $flag && ( $ret_count < ($length-1) ) ){
+					$i -=  $ret_count;
+					$r = $_r;
+				}
+			}
+			$ret [$j++]= $r ;
 		}
-		return trim($ret);
+		return implode( $this->LFC , $ret ) ;
 	}
 
 	function defMbSubStr( $line , $start , $length , $enc ){
@@ -2140,7 +2246,36 @@ echo "ddddddddddddddddddddd";
 		return array( $target , mb_strlen( $target , $enc ) ) ;
 	}
 
-
+	function mbProhibitTop(  $line , $enc ){
+		$flag = false;
+		$ret = null;
+		$len = mb_strlen( $line , $enc );
+		$count = 0 ;
+		do{
+			$top = mb_substr( $line , $count++ , 1 , $enc );
+		}while( isset($this->wrap_prohibit[$top]) && $this->wrap_prohibit[$top] && ( abs($count) < $len  ) );
+		-- $count ;
+		if( 0 < $count ){
+			$ret = mb_substr( $line , 0 , $count , $enc );
+			$line = mb_substr( $line , $count , $len - $count , $enc );
+			$flag = true;
+		}
+		return array( $line , $ret , $flag );
+	}
+	function mbProhibitEnd( $line , $enc ){
+		$flag = false;
+		$len = mb_strlen( $line , $enc );
+		$count = 0 ;
+		do{
+			$end = mb_substr( $line , --$count , 1 , $enc );
+		}while( isset($this->wrap_prohibit[$end]) && !$this->wrap_prohibit[$end] && ( abs($count) < $len  ) );
+		$count = abs( ++$count );
+		if( 0 < $count ){
+			$line = mb_substr( $line , 0 , $len - $count , $enc );
+			$flag = true;
+		}
+		return array( $line , $count , $flag );
+	}
 	//------------------------
 	// utility
 	//------------------------
@@ -2293,7 +2428,7 @@ echo "ddddddddddddddddddddd";
 		if( $level > 1 ){
 			fwrite( $fp , trim( $this->header_for_smtp ) . $this->log_LFC );
 		}elseif( $level > 2 ){
-			fwrite( $fp , $this->log_LFC . trim( $this->content_for_mailfunction ) . $this->log_LFC );
+			fwrite( $fp , $this->log_LFC .  $this->content_for_mailfunction  . $this->log_LFC );
 		}
 		fclose( $fp ) ;
 		return true ;
