@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.4a
+ * Qdmail ver 0.7.5a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.4a
+ * @version			0.7.5a
  * @lastmodified	2008-04-23
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
@@ -37,7 +37,7 @@ class QdmailBase{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.4a';
+	var	$version		= '0.7.5a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -1595,7 +1595,6 @@ $this->debugEchoLf($this->to);
 			$boundary = $this->makeBoundary();
 		}
 		$ret_boundary = $boundary ;
-
 		foreach( $structure as $key => $value ){
 
 			$ret_header = array();
@@ -1632,7 +1631,7 @@ $this->debugEchoLf($this->to);
 
 					break;
 					case 'html':
-
+						$this->content['HTML'] = isset($this->content['HTML']) ? $this->content['HTML']:null;
 						list( $content , $charset , $enc ) = $this->makeContentText( $this->content['HTML'] , 'HTML' );
 						$ret_header['Content-Type'] = 'text/html; charset="' . $charset . '"';
 						$ret_header['Content-Transfer-Encoding'] = $enc ;
@@ -1726,6 +1725,11 @@ $this->debugEchoLf($this->to);
 			$content_transfer_enc = isset($content['ENC'])
 				? $content['ENC'] : $enc;
 			$content = $_content;
+		}else{
+			$org_char = $this->qdmail_system_charset ; //already converted to system charaset
+			$target_char = $this->charset_content;
+			$length = $this->wordwrap_length;
+			$content_transfer_enc = $enc;
 		}
 		// fix crlf
 		$content = $this->clean($content);
@@ -1748,7 +1752,7 @@ $this->debugEchoLf($this->to);
 		if( $this->wordwrap_allow && $flag_wrp && false !== $length ){
 			$content = $this->mbWordwrap( $content , $length );
 		}
-		if($org_char != $target_char){
+		if( $org_char != $target_char ){
 			$content = mb_convert_encoding( $content , $target_char , $org_char );
 		}
 		$enc_upp = strtoupper($content_transfer_enc);
