@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.0a
+ * Qdsmtp ver 0.1.1a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.0a
- * @lastmodified	2008-04-23
+ * @version			0.1.1a
+ * @lastmodified	2008-04-24
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -30,7 +30,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-class QdError {
+if ( defined('CAKE_CORE_INCLUDE_PATH') || defined('CAKE')) {
+	class QdsmtpBranch extends Object{}
+}else{
+	class QdsmtpBranch{}
+}
+
+class QdError extends QdsmtpBranch{
 
 	var $name = 'QdError';
 	var $error_display		= true;
@@ -41,9 +47,7 @@ class QdError {
 	var $log_LFC			= "\r\n";
 	var $log_append			= 'a';
 	var $errorlog_append	= 'a';
-	var $log_path			= './';
 	var $log_filename		='qdsmtp.log';
-	var $errorlog_path		= './';
 	var $errorlog_filename	='qdsmtp_error.log';
 	var $log_dateformat		= 'Y-m-d H:i:s';
 
@@ -95,9 +99,8 @@ class QdError {
 			return true;
 		}
 		$filename	=	$tp ? $this->log_filename:$this->errorlog_filename;
-		$path		=	$tp ? $this->log_path:$this->errorlog_path;
 		$ap			=	$tp ? $this->log_append:$this->errorlog_append;
-		$fp = fopen( $path.$filename , $ap );
+		$fp = fopen( $filename , $ap );
 		if( !is_resource( $fp ) ){
 			$this->error[]='file open error at logWrite() line->'.__LINE__;
 			return false;
@@ -144,7 +147,7 @@ class QdError {
 	}
 }
 
-class QdSmtp extends QdError{
+class QdsmtpBase extends QdError{
 
 	var $name		= 'QdSmtp';
 	var $smtpLFC	="\r\n";
@@ -171,6 +174,8 @@ class QdSmtp extends QdError{
 	var $auto_kind		= true;
 	var $rcpt			= array();
 	var $rcpt_stack		= array();
+	var $rcpt_undone	= array();
+	var $rcpt_undone_stack = array();
 	var $smtp_limit		= 1000;
 	var $sock			= null;
 	var $already_auth	= false;
@@ -181,12 +186,12 @@ class QdSmtp extends QdError{
 	var $pop3_valid_minute	= 10;
 	var $time_out			= 3 ;
 
-	function QdSmtp( $continue = false ){
-		if( is_null( $contine ) && is_bool( $contine ) ){
+	function QdsmtpBase( $param = null ){
+		if( !is_null( $param[0] ) && is_bool( $param[0] ) ){
 			$this->continue = $continue;
 		}
-		if( is_array( $continue ) ){
-			$this->server( $continue );
+		if( is_array( $param[0] ) ){
+			$this->server( $param[0] );
 		}
 	}
 
@@ -207,6 +212,7 @@ class QdSmtp extends QdError{
 		if( isset( $this->smtp_param['CONTINUE'] ) ){
 			$this->continue = $this->smtp_param['CONTINUE'];
 		}
+		return true;
 	}
 	function data( $data = null ){
 		if( is_null( $data ) ){
@@ -313,7 +319,7 @@ class QdSmtp extends QdError{
 
 		if( !is_array($this->smtp_param['PROTOCOL'])){
 			$fg = $this->sendBase( $data , $this->smtp_param['PROTOCOL'] );
-			$this->log( null ,$mes );
+			$this->log();
 			return $fg;
 		}
 		$stack = array( $this->error_display , $this->errorlog_level );
@@ -330,13 +336,13 @@ class QdSmtp extends QdError{
 		list( $this->error_display , $this->errorlog_level ) = $stack;
 		if( !$ret ){
 			$fg = $this->errorGather( implode($this->smtpLFC , $this->error_stack) , __LINE__);
-			$this->log( null ,$mes );
+			$this->log();
 			return $fg;
 		}
 		if( !$this->continue ){
 			$this->close();
 		}
-		$this->log( null ,$mes );
+		$this->log();
 		return ( 0 === count( $this->error_stack ) ) && $this->errorGather();
 	}
 
@@ -393,7 +399,7 @@ class QdSmtp extends QdError{
 					if( is_null( $decide ) ){
 						return $this->errorGather('HOST:'.$this->smtp_param['HOST'].' doesnot suppoted MY Abalable SMTP AUTH Protocol '.implode(' or ',$this->smtp_auth_kind),__LINE__);
 					}
-					$decdide = strtolower(str_replace('-','_',$decdide));
+					$decide = strtolower( str_replace( '-' , '_' ,$decide ) );
 					if( !$this->{$decide}() ){
 						return $this->errorGather('Auth Error',__LINE__);;
 					}
@@ -511,14 +517,12 @@ class QdSmtp extends QdError{
 			}else{
 				$spacer = ' ';
 			}
-			$put_message = $item[0] . $spacer . $item[1] . $this->smtpLFC;
-			if( $this->smtp_limit < strlen($put_message) ){
-				return array( $this->errorGather('Overfllow '.$this->smtp_limit .' chars',__LINE__), $message , false );
-			}
-			if( !fputs( $fp , $put_message ) ){
+			$put_message = rtrim( $item[0] . $spacer . $item[1] ) . $this->smtpLFC;
+			if( !fputs( $fp , $put_message  ) ){
 				return array( $this->errorGather('SMTP can not fputs',__LINE__), $message , false );
 			}
-			$this->smtp_log[] = $this->name.' '.$put_message ;
+			$this->smtp_log[] = $this->name . ' ' . $put_message ;
+
 			do{
 				list( $st , $_message ) = $this->getMessage( $fp );
 				$message .= trim( $_message ) . $this->smtpLFC;
@@ -679,15 +683,12 @@ class QdSmtp extends QdError{
 	}
 
 	function smtpEscape( $mes ){
-		$lines = preg_split( '/\r?\n/' , $mes );
-		foreach( $lines as $key => $line ){
-			if( '.' == $line ){
-				$lines[$key] = '..';
-			}
+		$mes = preg_replace( '/\r?\n\.\r?\n/is' , $this->smtpLFC . '..' . $this->smtpLFC , $mes );
+		if( 0 !== preg_match( '/\r?\n[^\r\n]{'.$this->smtp_limit.',}\r?\n/is' , $mes ) ){
+			return $this->errorGather('SMTP Overfllow '.$this->smtp_limit.' chars in one line.',__LINE__);
 		}
-		return implode( $this->smtpLFC , $lines );
+		return $mes;
 	}
-
 	//----------------------------------------------------
 	// POP3
 	//----------------------------------------------------
@@ -837,5 +838,40 @@ var $smtp_status= array(
 		'504' => 'E',
 	),
 );
+}
 
+class Qdsmtp extends QdsmtpBase{
+	function Qdsmtp( $param = null ){
+		if( !is_null($param)){
+			$param = func_get_args();
+		}
+		parent::__construct( $param );
+	}
+}
+//-------------------------------------------
+// CakePHP Component
+//-------------------------------------------
+class QdsmtpComponent extends QdsmtpBase{
+
+	var $layout		= 'default';
+	var $view_dir	= 'email';
+	var $layout_dir	= 'email';
+	var $template	= 'default';
+	var $view		= null;
+
+	function QdsmtpComponent( $param = null ){
+		if( !is_null($param)){
+			$param = func_get_args();
+		}
+		parent::__construct( $param );
+	}
+
+	function startup(&$controller) {
+		$this->Controller =& $controller;
+		if( defined( 'COMPONENTS' ) ){
+			$this->logFilename(COMPONENTS.$this->name.'.log');
+			$this->errorlogFilename( COMPONENTS . '_error' . $this->name . '.log' );
+		}
+		return;
+	}
 }?>
