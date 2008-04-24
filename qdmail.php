@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.5a
+ * Qdmail ver 0.7.6a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.5a
- * @lastmodified	2008-04-23
+ * @version			0.7.6a
+ * @lastmodified	2008-04-24
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -31,13 +31,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-class QdmailBase{
+//-------------------------------------------
+// For CakePHP , extended 'Object' Class ,
+// if including in CakePHP Component .
+// At normal PHP Script or another Framework ,
+// 'QdmailBranch' means Dummy Base Class .
+//-------------------------------------------
+if ( defined('CAKE_CORE_INCLUDE_PATH') || defined('CAKE')) {
+	class QdmailBranch extends Object{
+	}
+}else{
+	class QdmailBranch{
+	}
+}
+
+class QdmailBase extends QdmailBranch{
 
 	//----------
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.5a';
+	var	$version		= '0.7.6a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -274,7 +288,22 @@ class QdmailBase{
 	var	$receipt		= array()	;
 	var	$allways_bcc	= null ;
 	var	$header			= array()	;
-	var $content		= null;
+	var $content		= array(
+		'TEXT'=>array(
+			'CONTENT'		=> null,
+			'LENGTH'		=> null,
+			'_CHARSET'		=> null,
+			'ENC'			=> null,
+			'_ORG_CHARSET'	=> null,
+		),
+		'HTML'=>array(
+			'CONTENT'		=> null,
+			'LENGTH'		=> null,
+			'_CHARSET'		=> null,
+			'ENC'			=> null,
+			'_ORG_CHARSET'	=> null,
+		),
+	);
 	var	$header_for_mailfunction_to;
 	var	$header_for_mailfunction_subject;
 	var	$header_for_mailfunction_other;
@@ -313,6 +342,7 @@ class QdmailBase{
 	var	$boundary_base_degit= 2 ;
 	var	$stack_construct	= null ;
 	var $start_time			= null;
+	var $framework			= null;
 	//-------------------------------
 	// logs
 	// 0 is nolog,
@@ -505,6 +535,7 @@ class QdmailBase{
 		'allways_bcc'		=> 'string' ,
 		'wrap_prohibit_top'	=> 'string' ,
 		'wrap_prohibit_end'	=> 'string' ,
+		'framework'			=> 'string' ,
 		'mb_strwidth_magni'	=> 'numeric' ,
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
@@ -663,6 +694,9 @@ class QdmailBase{
 			$this->allways_bcc = array();
 			return false ; 
 		}
+	}
+	function framework( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function attachPath( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
@@ -1064,13 +1098,14 @@ class QdmailBase{
 		if( !is_string( $cont ) ){
 			return $this->errorGather('Body need String type' ,__LINE__) ;
 		}
-		$this->content[strtoupper($type)] = array(
+		$temp = array(
 			'CONTENT'=>$cont,
 			'LENGTH'=>$length,
 			'_CHARSET'=>$charset,
 			'ENC'=>$enc,
 			'_ORG_CHARSET'=>$org_charset,
 		);
+		$this->content[strtoupper($type)] = array_merge( $this->content[strtoupper($type)] , $temp );
 		return $this->errorGather() ;
 	}
 
@@ -1232,11 +1267,9 @@ class QdmailBase{
 	function headerDefault(){
 		$this->header['MIME-Version'] = '1.0';
 		$this->header['X-Mailer'] = $this->xmailer . ' ' . $this->version ;
-		$this->header['license'] = $this->license ;
+		$this->header['X-license'] = $this->license .' http://hal456.net/qdmail';
 	}
 	function send( $header = array() , $content = array() , $attach  = array() , $option = array() ){
-
-$this->debugEchoLf($this->to);
 		if( is_null( $this->start_time )){
 			$this->start_time = microtime();
 		}
@@ -1426,7 +1459,7 @@ $this->debugEchoLf($this->to);
 				unset($header['SUBJECT']);
 			}
 		}
-		if( !empty($content) ){
+		if( !empty( $content ) ){
 
 			if( !is_array($content) ){
 				$temp = $content;
@@ -1470,15 +1503,15 @@ $this->debugEchoLf($this->to);
 		};
 
 		// Text only or Html Only or both ?
-		if( empty($this->is_html) ){
-			if( isset($this->content['HTML'] ) && isset( $this->content['TEXT'] )){
+		if( empty( $this->is_html ) ){
+			if( $this->issetContent( $this->content['HTML'] ) && $this->issetCOntent( $this->content['TEXT'] ) ){
 				$this->is_html = 'BOTH' ;
-			}elseif( isset( $this->content['HTML'] ) && $this->auto_both ){
+			}elseif( $this->issetContent( $this->content['HTML'] ) && $this->auto_both ){
 				$this->content['TEXT'] = array(
-					'content'=>$this->htmlToText($this->content['HTML']['CONTENT'])
+					'content'=>$this->htmlToText( $this->content['HTML']['CONTENT'] )
 				);
 				$this->is_html = 'BOTH';
-			}elseif(isset( $this->content['HTML'] ) && !$this->auto_both ){
+			}elseif( $this->issetContent( $this->content['HTML'] ) && !$this->auto_both ){
 				$this->is_html = 'HTML';
 			}else{
 				$this->is_html = 'TEXT';
@@ -1631,7 +1664,6 @@ $this->debugEchoLf($this->to);
 
 					break;
 					case 'html':
-						$this->content['HTML'] = isset($this->content['HTML']) ? $this->content['HTML']:null;
 						list( $content , $charset , $enc ) = $this->makeContentText( $this->content['HTML'] , 'HTML' );
 						$ret_header['Content-Type'] = 'text/html; charset="' . $charset . '"';
 						$ret_header['Content-Transfer-Encoding'] = $enc ;
@@ -1691,7 +1723,6 @@ $this->debugEchoLf($this->to);
 		}
 	return $this->body;
 	}
-
 	function expandHeader( $hds ){
 		if(empty($hds)){
 			return null;
@@ -1714,7 +1745,7 @@ $this->debugEchoLf($this->to);
 		$flag_wrp = ( 'TEXT' == $is_text ) ? true:false;
 		$enc = ( 'HTML' == $is_text ) ? $this->content_transfer_enc_html : $this->content_transfer_enc_text ;
 
-		if(is_array($content)){
+		if( is_array( $content ) ){
 			$content = array_change_key_case( $content , CASE_UPPER );
 			$_content = $content['CONTENT'];
 			$org_char = $this->qdmail_system_charset ; //already converted to system charaset
@@ -1726,7 +1757,7 @@ $this->debugEchoLf($this->to);
 				? $content['ENC'] : $enc;
 			$content = $_content;
 		}else{
-			$org_char = $this->qdmail_system_charset ; //already converted to system charaset
+			$org_char = $this->qdmail_system_charset ;
 			$target_char = $this->charset_content;
 			$length = $this->wordwrap_length;
 			$content_transfer_enc = $enc;
@@ -2324,6 +2355,18 @@ $this->debugEchoLf($this->to);
 	//------------------------
 	// utility
 	//------------------------
+	function issetContent( $array ){
+		if( !isset( $array ) ){
+			return false ;
+		}
+		if( isset( $array['CONTENT'] ) ){
+			return true ;
+		}
+		if( isset( $array ) && is_string( $array ) ){
+			return true ;
+		}
+		return false ;
+	}
 	function keyUpper( $array ){
 		$up_array = array_change_key_case( $array , CASE_UPPER );
 		$link = $this->qdmail_array_combine( array_keys( $up_array ) , array_keys( $array ));
@@ -2350,7 +2393,7 @@ $this->debugEchoLf($this->to);
 		return $ret;
 	}
 	function clean( $content ){
-		return preg_replace('/\r?\n/',"\r\n",$content);
+		return rtrim( preg_replace( '/\r?\n/' , "\r\n" , $content ) );
 	}
 	function quotedPrintableEncode( $word ){
 		if(empty($word)){
@@ -2673,18 +2716,20 @@ EOF;
 		if( !is_null( $obj ) ){
 			 $this->smtp_object = $obj;
 		}
-		if( !class_exists ( 'Qdsmtp' ) && file_exists( 'qdsmtp.php' ) ){
-			require_once( 'qdsmtp.php' );
-		}elseif( !class_exists ( 'Qdsmtp' ) && !file_exists( 'qdmail.php' )){
-			return $this->errorGather('Plese load SMTP Program - Qdsmtp http://hal456.net/qdsmtp',__LINE__);
+		if( !isset( $this->smtp_object ) || !is_object( $this->smtp_object ) ){
+			if( false === ( $this->smtp_object = $this->smtpObject() ) ){
+				return $this->errorGather('SMTP Object make \'new\' error',__LINE__);
+			}
 		}
 		$this->smtp_param = array_change_key_case( $this->smtp_param , CASE_UPPER );
+
 		if( !isset( $this->smtp_param['HOST'] ) ){
-			return $this->errorGather('No SMTP Settings',__LINE__);
+			return $this->errorGather('No exist SMTP\'s Settings',__LINE__);
 		}
-		if( !isset( $this->smtp_object ) || !is_object( $this->smtp_object ) ){
-			$this->smtp_param['CONTINUE'] = true;
-			$this->smtp_object = & new Qdsmtp( $this->smtp_param );
+		$this->smtp_param['CONTINUE'] = true;
+
+		if( !$this->smtp_object -> server( $this->smtp_param )){
+			return $this->errorGather('SMTP Object initialize error',__LINE__);
 		}
 		if( $this->smtp_loglevel_link ){
 			$this->smtp_object -> logLevel( $this->log_level );
@@ -2695,6 +2740,19 @@ EOF;
 		$this->smtp_object -> data( $this->header_for_smtp . $this->LFC . $this->content_for_mailfunction );
 		return $this -> smtp_object -> send();
 	}
+	//------------------------------------------
+	// expecting Override on the other FrameWork
+	//------------------------------------------
+	function smtpObject(){
+		if( !class_exists ( 'Qdsmtp' ) && file_exists( 'qdsmtp.php' ) ){
+			require_once( 'qdsmtp.php' );
+		}elseif( !class_exists ( 'Qdsmtp' ) && !file_exists( 'qdsmtp.php' )){
+			return $this->errorGather('Plese load SMTP Program - Qdsmtp http://hal456.net/qdsmtp',__LINE__);
+		}
+		$ret = & new Qdsmtp();
+		return $ret;
+	}
+
 
 }//the QdmailBase
 
@@ -2734,14 +2792,113 @@ class Qdmail extends QdmailUserFunc{
 		}
 		parent::__construct( $param );
 	}
-
 }
 
-class QdmailComponendt extends QdmailUserFunc{
+//-------------------------------------------
+// CakePHP Component
+//-------------------------------------------
+class QdmailComponent extends QdmailUserFunc{
 
-	var $name = 'Qdmail';
-	// comming soon !? for CakePHP
-	// now construction 
-	// if you want to use in CakePHP , change like follows
-	// "class QdmailBase{" => "class QdmailBase extends Object{"
+	var $layout		= 'default';
+	var $view_dir	= 'email';
+	var $layout_dir	= 'email';
+	var $template	= 'default';
+	var $view		= null;
+
+	function QdmailComponent( $param = null ){
+		if( !is_null($param)){
+			$param = func_get_args();
+		}
+		parent::__construct( $param );
+	}
+
+	function startup(&$controller) {
+		$this->Controller =& $controller;
+		if( defined( 'COMPONENTS' ) ){
+			$this->logPath(COMPONENTS);
+			$this->errorlogPath(COMPONENTS);
+		}
+		return;
+	}
+	//----------------------------
+	// Override Parent Method
+	//----------------------------
+	function smtpObject(){
+		if( isset( $this->Qdsmtp ) && is_object( $this->Qdsmtp ) ){
+			return $this->Qdsmtp;
+		}
+
+		if( !class_exists ( 'QdsmtpComponent' ) ){
+			if( !$this->import( 'Component' , 'Qdsmtp' ) ){
+				return $this->errorGather('Qdmail<->CakePHP Component Load Error , the name is Qdsmtp',__LINE__);
+			}
+		}
+		$ret = & new QdsmtpComponent();
+		if( !is_object( $ret ) ){
+				return $this->errorGather('Qdmail<->CakePHP Component making Instance Error , the name is QdsmtpComponent',__LINE__);
+		}
+		$ret -> startup( $this->Controller );
+		return $ret;
+	}
+	//----------------------------
+	// Cake Interface
+	//----------------------------
+	function import( $kind , $name ){
+		if( 1.2 > (float) substr(Configure::version(),0,3) ){
+			$function_name = 'load' . $kind ;
+			if( function_exists( $function_name ) ){
+					return $function_name( $name ) ;
+			}else{
+					return $this->errorGather('Qdmail<->CakePHP ' .$kind .' Load Error , the name is \'' . $name . '\'',__LINE__);
+			}
+		}else{
+			return App::import( $kind , $name ) ;
+		}
+	}
+	function cakeText( $content , $template = null , $layout = null , $org_charset = null , $target_charset = null , $enc = null , $wordwrap_length = null ){
+
+		$this->template = is_null( $template ) ? $template : $this->template ;
+		$this->layout   = is_null( $layout )   ? $layout   : $this->template ;
+
+		list( $cont , $target_charset , $org_charset ) = $this->cakeRender( $content , 'TEXT' , $org_charset = null , $target_charset );
+		return $this->text(  $cont , $wordwrap_length , $target_charset , $enc , $org_charset );
+	}
+	function cakeHtml( $content , $template = null , $layout = null , $org_charset = null , $target_charset = null , $enc = null ){
+
+		$this->template = is_null( $template ) ?  $this->template : $template ;
+		$this->layout   = is_null( $layout )   ?  $this->template : $layout   ;
+
+		list( $cont , $target_charset , $org_charset ) = $this->cakeRender( $content , 'HTML' , $org_charset = null , $target_charset );
+		return $this->html(  $cont , null , $target_charset , $enc , $org_charset  );
+	}
+	function cakeRender( $content , $type , $org_charset = null , $target_charset = null){
+
+		if( is_null( $target_charset ) ){
+			$target_charset = $this->qdmail_system_charset;
+		}
+		if( !class_exists ( $this->Controller->view ) ){
+			if( !$this->import( 'View' , $this->view ) ){
+				return $this->errorGather('Qdmail<->CakePHP View Load Error , the name is \''.$this->view.'\'',__LINE__);
+			}
+		}
+		$type = strtolower( $type );
+		$view = & new $this->Controller->view( $this->Controller , false );
+		$view->layout = $this->layout;
+		$mess = null;
+		$content = $view->renderElement( $this->view_dir . DS . $type . DS . $this->template , array('content' => $content ) , true );
+		if( 1.2 > (float) substr(Configure::version(),0,3) ){
+			$view->subDir = $this->layout_dir . DS . $type . DS ;
+		}else{
+			$view->layoutPath = $this->layout_dir . DS . $type;
+		}
+		$mess .= $view->renderLayout( $content ) ;
+
+		if( is_null( $org_charset ) ){
+			$org_charset = mb_detect_encoding( $mess );
+		}
+		if( $org_charset !== $target_charset ){
+			$mess = mb_convert_encoding( $mess , $target_charset , $org_charset );
+		}
+		return array( $mess , $target_charset , $org_charset );
+	}
 }?>
