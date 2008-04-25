@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.1a
+ * Qdsmtp ver 0.1.2a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.1a
- * @lastmodified	2008-04-24
+ * @version			0.1.2a
+ * @lastmodified	2008-04-25
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -845,7 +845,7 @@ class Qdsmtp extends QdsmtpBase{
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
-		parent::__construct( $param );
+		parent::QdsmtpBase( $param );
 	}
 }
 //-------------------------------------------
@@ -863,7 +863,7 @@ class QdsmtpComponent extends QdsmtpBase{
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
-		parent::__construct( $param );
+		parent::QdsmtpBase( $param );
 	}
 
 	function startup(&$controller) {
