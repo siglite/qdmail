@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.7a
+ * Qdmail ver 0.7.8a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.7a
- * @lastmodified	2008-04-25
+ * @version			0.7.8a
+ * @lastmodified	2008-04-28
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -58,7 +58,7 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.7a';
+	var	$version		= '0.7.8a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -2928,9 +2928,9 @@ class Qdmail extends QdmailUserFunc{
 //-------------------------------------------
 class QdmailComponent extends QdmailUserFunc{
 
-	var $layout		= 'default';
 	var $view_dir	= 'email';
 	var $layout_dir	= 'email';
+	var $layout		= 'default';
 	var $template	= 'default';
 	var $view		= null;
 
@@ -2986,8 +2986,8 @@ class QdmailComponent extends QdmailUserFunc{
 	}
 	function cakeText( $content , $template = null , $layout = null , $org_charset = null , $target_charset = null , $enc = null , $wordwrap_length = null ){
 
-		$this->template = is_null( $template ) ? $template : $this->template ;
-		$this->layout   = is_null( $layout )   ? $layout   : $this->template ;
+		$this->template = is_null( $template ) ?  $this->template : $template ;
+		$this->layout   = is_null( $layout )   ?  $this->layout : $layout ;
 
 		list( $cont , $target_charset , $org_charset ) = $this->cakeRender( $content , 'TEXT' , $org_charset = null , $target_charset );
 		return $this->text(  $cont , $wordwrap_length , $target_charset , $enc , $org_charset );
@@ -2995,7 +2995,7 @@ class QdmailComponent extends QdmailUserFunc{
 	function cakeHtml( $content , $template = null , $layout = null , $org_charset = null , $target_charset = null , $enc = null ){
 
 		$this->template = is_null( $template ) ?  $this->template : $template ;
-		$this->layout   = is_null( $layout )   ?  $this->template : $layout   ;
+		$this->layout   = is_null( $layout )   ?  $this->layout : $layout ;
 
 		list( $cont , $target_charset , $org_charset ) = $this->cakeRender( $content , 'HTML' , $org_charset = null , $target_charset );
 		return $this->html(  $cont , null , $target_charset , $enc , $org_charset  );
