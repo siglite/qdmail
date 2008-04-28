@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.8a
+ * Qdmail ver 0.7.9a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.8a
+ * @version			0.7.9a
  * @lastmodified	2008-04-28
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
@@ -58,7 +58,7 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.8a';
+	var	$version		= '0.7.9a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -193,7 +193,7 @@ class QdmailBase extends QdmailBranch{
 			'STRUCTURE'		=> 4,
 			'_CHARSET'		=> 'iso-2022-jp',
 			'ENC_TEXT'		=> '7bit',
-			'ENC_HTML'		=> '7bit',
+			'ENC_HTML'		=> 'QUOTED-PRINTABLE',
 			'HTML_EXTERNAL'	=> array('this','stripCrlf') ,
 			'DISPOSITION'	=> true ,
 		),
@@ -202,7 +202,16 @@ class QdmailBase extends QdmailBranch{
 			'STRUCTURE'		=> 2,
 			'_CHARSET'		=> 'iso-2022-jp',
 			'ENC_TEXT'		=> '7bit',
-			'ENC_HTML'		=> '7bit',
+			'ENC_HTML'		=> 'QUOTED-PRINTABLE',
+			'HTML_EXTERNAL'	=> array('this','stripCrlf') ,
+			'DISPOSITION'	=> true ,
+		),
+		array(
+			'OPTION_NAME'	=> array( 'WL','WILLCOM' ,'POCKET'),
+			'STRUCTURE'		=> 2,
+			'_CHARSET'		=> 'iso-2022-jp',
+			'ENC_TEXT'		=> '7bit',
+			'ENC_HTML'		=> 'QUOTED-PRINTABLE',
 			'HTML_EXTERNAL'	=> array('this','stripCrlf') ,
 			'DISPOSITION'	=> true ,
 		),
@@ -288,7 +297,7 @@ class QdmailBase extends QdmailBranch{
 		'vodafone.ne.jp'=>'SB',
 		'ezweb.ne.jp'=>'AU',
 		'emnet.ne.jp'=>'EM',
-//		'pdx.ne.jp'=>'WL',
+		'pdx.ne.jp'=>'WL',
 	);
 	//------------------
 	// using address and content
