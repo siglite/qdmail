@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.2a
+ * Qdsmtp ver 0.1.3a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.2a
- * @lastmodified	2008-04-25
+ * @version			0.1.3a
+ * @lastmodified	2008-05-01
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -36,9 +36,9 @@ if ( defined('CAKE_CORE_INCLUDE_PATH') || defined('CAKE')) {
 	class QdsmtpBranch{}
 }
 
-class QdError extends QdsmtpBranch{
+class QdsmtpError extends QdsmtpBranch{
 
-	var $name = 'QdError';
+	var $name = 'QdsmtpError';
 	var $error_display		= true;
 	var $errorlog_level		= 0;
 	var $log_level			= 0;
@@ -147,7 +147,7 @@ class QdError extends QdsmtpBranch{
 	}
 }
 
-class QdsmtpBase extends QdError{
+class QdsmtpBase extends QdsmtpError{
 
 	var $name		= 'QdSmtp';
 	var $smtpLFC	="\r\n";
