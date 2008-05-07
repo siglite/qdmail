@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.7.9a
+ * Qdmail ver 0.8.0a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.7.9a
- * @lastmodified	2008-04-28
+ * @version			0.8.0a
+ * @lastmodified	2008-05-08
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -58,7 +58,7 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.7.9a';
+	var	$version		= '0.8.0a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -360,7 +360,7 @@ class QdmailBase extends QdmailBranch{
 	//------------------------
 	// etc
 	//------------------------
-	var	$LFC				= "\r\n";
+	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change "\n"
 	var	$mta_option			= null ;
 	var	$is_create			= false;
 	var	$validate_addr  	= array('this','validateAddr');
@@ -1327,7 +1327,7 @@ class QdmailBase extends QdmailBranch{
 	function headerDefault(){
 		$this->header['MIME-Version'] = '1.0';
 		$this->header['X-Mailer'] = $this->xmailer . ' ' . $this->version ;
-		$this->header['X-license'] = $this->license .' http://hal456.net/qdmail';
+		$this->header['X-'.$this->xmailer.'-license'] = $this->license .' http://hal456.net/qdmail';
 		if( ( $this->debug > 0 ) && $this->smtp){
 			$this->header['X-Function'] = 'SMTP';
 		}else{
@@ -2162,18 +2162,18 @@ $this->debugEcholine(3,__LINE__);
 			list( $path_filename, $void ) = $this->keyUpper($path_filename);
 			if( !isset( $path_filename['PATH'] ) ){
 				$path_filename['PATH'] = $path_filename[0];
-				$path_filename[$this->tokey['_NAME']] = isset($path_filename[1]) ? $path_filename[1]:$path_filename[0];
+				$path_filename['NAME'] = isset($path_filename[1]) ? $path_filename[1]:$path_filename[0];
 			}
 			$content_id = null;
 			if( true === $inline ){
 				$content_id =$this->selectContentId(
-					isset($path_filename[$this->tokey['_NAME']]) ? $path_filename[$this->tokey['_NAME']]:null ,
+					isset($path_filename['NAME']) ? $path_filename['NAME']:null ,
 					isset($path_filename['PATH']) ? $path_filename['PATH']:null
 				);
 			}
 				$this->attachFull(
 					$path_filename['PATH'] , 
-					isset($path_filename[$this->tokey['_NAME']]) ? $path_filename[$this->tokey['_NAME']]:basename($path_filename['PATH']) , 
+					isset($path_filename['NAME']) ? $path_filename['NAME']:basename($path_filename['PATH']) , 
 					$content_id , 
 					isset($path_filename['MIME_TYPE']) ? $path_filename['MIME_TYPE']:$mime_type , 
 					$inline , 
@@ -2198,7 +2198,6 @@ $this->debugEcholine(3,__LINE__);
 		if( is_string( $path_filename ) && empty( $attach_name ) ) {
 			$attach_name = basename( $path_filename ) ;
 		}
-
 		$this->attachFull( 
 			$path_filename , 
 			$attach_name , 
@@ -2215,7 +2214,7 @@ $this->debugEcholine(3,__LINE__);
 
 		$_att = array(array(
 			'PATH'=>$path_filename,
-			$this->tokey['_NAME']=>$attach_name,
+			'NAME'=>$attach_name,
 			'MIME_TYPE'=> $mime_type,
 			'CONTENT-ID'=> $content_id,
 			'_CHARSET'=> $target_charset,
@@ -2233,15 +2232,14 @@ $this->debugEcholine(3,__LINE__);
 		$ret_boundary = null;
 		$ret_header = array();
 		$ret_content = null;
-
 		$one = array_change_key_case( $one , CASE_UPPER);
-		if( !isset($one[$this->tokey['_NAME']] )){
-			$one[$this->tokey['_NAME']] = basename( $one['PATH'] );
+		if( !isset($one['NAME'] )){
+			$one['NAME'] = basename( $one['PATH'] );
 		}
 		//Content-Type
 		if( isset( $one['CONTENT-TYPE'] )){
 			$type = $one['CONTENT-TYPE'];
-		}elseif( 0 != preg_match( '/\.([^\.]+)$/' , $one[$this->tokey['_NAME']] , $matches )){
+		}elseif( 0 != preg_match( '/\.([^\.]+)$/' , $one['NAME'] , $matches )){
 			$type = isset( $this->attach_ctype[strtolower($matches[1])] ) 
 				? $this->attach_ctype[strtolower($matches[1])] : 'unkown';
 		}elseif(0 != preg_match( '/\.([^\.]+)$/' , $one['PATH'] , $matches )){
@@ -2249,7 +2247,7 @@ $this->debugEcholine(3,__LINE__);
 				? $this->attach_ctype[strtolower($matches[1])] : 'unkown';
 
 			if( $this->auto_ext && 'unkown' != $type ){
-				$one[$this->tokey['_NAME']] .= '.'.$matches[1];
+				$one['NAME'] .= '.'.$matches[1];
 			}
 
 		}else{
@@ -2261,8 +2259,7 @@ $this->debugEcholine(3,__LINE__);
 		}else{
 			$charset = $this->charset_attach_filename;
 		}
-		$filename = $this->mime_string( $one[$this->tokey['_NAME']] , $charset );
-
+		$filename = $this->mime_string( $one['NAME'] , $charset );
 		//is Inline ?
 		if( $inline ){
 			$id = $this->makeContentId($one['CONTENT-ID']);
@@ -2353,7 +2350,7 @@ $this->debugEcholine(3,__LINE__);
 		$_att[0]['DIRECT'] = true;
 		$_att[0]['DATA'] = $data;
 		$_att[0]['PATH'] = null;
-		$_att[0][$this->tokey['_NAME']] = $attach_name ;
+		$_att[0]['NAME'] = $attach_name ;
 		$_att[0]['MIME_TYPE'] = $mime_type ;
 		$_att[0]['CONTENT-ID'] = $content_id ;
 		$_att[0]['_CHARSET'] = $target_charset;
@@ -2527,8 +2524,14 @@ $this->debugEcholine(3,__LINE__);
 		}
 		return $ret;
 	}
+
 	function clean( $content ){
-		return rtrim( preg_replace( '/\r?\n/' , "\r\n" , $content ) );
+		if($this->smtp){
+			$LFC = $this->LFC;
+		}else{
+			$LFC = "\n";
+		}
+		return rtrim( preg_replace( '/\r?\n/' , $LFC , $content ) );
 	}
 	function quotedPrintableEncode( $word ){
 		if(empty($word)){
