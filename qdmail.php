@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.0a
+ * Qdmail ver 0.8.1a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.0a
- * @lastmodified	2008-05-08
+ * @version			0.8.1a
+ * @lastmodified	2008-05-15
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -58,7 +58,7 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.0a';
+	var	$version		= '0.8.1a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -1326,12 +1326,11 @@ class QdmailBase extends QdmailBranch{
 	//-------------------------------------------
 	function headerDefault(){
 		$this->header['MIME-Version'] = '1.0';
-		$this->header['X-Mailer'] = $this->xmailer . ' ' . $this->version ;
-		$this->header['X-'.$this->xmailer.'-license'] = $this->license .' http://hal456.net/qdmail';
+		$this->header['X-'.$this->xmailer] = 'version-'.$this->version . ' license-' . $this->license .' http://hal456.net/qdmail';
 		if( ( $this->debug > 0 ) && $this->smtp){
-			$this->header['X-Function'] = 'SMTP';
+			$this->header['X-'.$this->xmailer] .= $this->LFC.' send-by SMTP';
 		}else{
-			$this->header['X-Function'] = 'mail';
+			$this->header['X-'.$this->xmailer] .= $this->LFC . ' send-by mailfunction';
 		}
 	}
 	function send( $_header = array() , $content = array() , $attach  = array() , $option = array() ){
@@ -1943,6 +1942,39 @@ $this->debugEcholine(3,__LINE__);
 	}
 
 	function mime_string( $subject , $charset , $org_charset = null  ) {
+		if( empty($subject) || ( 0 === preg_match( '/[^\w\s0-9\.]/' , $subject ) ) ){
+			return trim(chunk_split($subject, 75, "\r\n "));
+		}
+		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
+		$subject = mb_convert_encoding( $subject , $charset , $enc );
+		$start = "=?" . $charset . "?B?";
+		$end = "?=";
+		$spacer = $end . $this->LFC . ' ' . $start;
+
+		$length = 75 - strlen($start) - strlen($end);
+
+		$pointer = 0;
+		$line = null;
+		$_ret = array();
+		$max = mb_strlen( $subject ,$charset );
+		while( $pointer <= $max ){
+			$one = mb_substr( $subject , $pointer , 1 , $charset );
+			$bs64len = floor( ( strlen( bin2hex( $line . $one ) ) / 2 ) * 8 / 6 );
+			$bs64len += 4- ( $bs64len % 4 ) ;
+			if( $bs64len <= $length ){
+				$line .= $one ;
+				$pointer ++;
+			}else{
+				$_ret[] = base64_encode($line) ;
+				$line = null ;
+			}
+		}
+		$_ret[] = base64_encode( $line );
+		$ret = $start . implode( $spacer , $_ret ) . $end;
+		return $ret ;
+	}
+
+	function _mime_string( $subject , $charset , $org_charset = null  ) {
 		if( ! preg_match( '/[^\w\s0-9\.]/' , $subject ) ){
 			return trim(chunk_split($subject, 75, "\r\n "));
 		}
@@ -1951,7 +1983,6 @@ $this->debugEcholine(3,__LINE__);
 		$start = "=?" . $charset . "?B?";
 		$end = "?=";
 		$spacer = $end . "\r\n " . $start;
-
 		$length = 75 - strlen($start) - strlen($end);
 		$length = $length - ($length % 4);// base64 is each 4char convert
 		$subject = base64_encode($subject);
