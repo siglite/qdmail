@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.1a
+ * Qdmail ver 0.8.2a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.1a
- * @lastmodified	2008-05-15
+ * @version			0.8.2a
+ * @lastmodified	2008-05-27
  * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -58,7 +58,7 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.1a';
+	var	$version		= '0.8.2a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'AGPLv3';
 	//--------------------
@@ -929,12 +929,14 @@ class QdmailBase extends QdmailBranch{
 		}
 
 		if( !is_null($op) && is_string($op) ){
-			$this->content_transfer_enc_text = $this->content_transfer_enc_html = $op ;
+
+			$this->content_transfer_enc_text = $op ;
+			$this->content_transfer_enc_html = $op ;
+
 			return $this->charset( $array );
 		}elseif(!is_null($op) && !is_string($op)){
 			return $this->errorSpecify( __FUNCTION__ , __LINE__ );
 		}
-
 		if( is_array( $array ) ){
 			$array = array_change_key_case( $array , CASE_UPPER );
 			foreach( $array as $key => $value ){
@@ -1876,7 +1878,6 @@ $this->debugEcholine(3,__LINE__);
 	function makeContentText( $content , $is_text = 'TEXT' ){
 		$flag_wrp = ( 'TEXT' == $is_text ) ? true:false;
 		$enc = ( 'HTML' == $is_text ) ? $this->content_transfer_enc_html : $this->content_transfer_enc_text ;
-
 		if( is_array( $content ) ){
 			$content = array_change_key_case( $content , CASE_UPPER );
 			$_content = $content['CONTENT'];
@@ -1919,9 +1920,9 @@ $this->debugEcholine(3,__LINE__);
 			$content = mb_convert_encoding( $content , $target_char , $org_char );
 		}
 		$enc_upp = strtoupper($content_transfer_enc);
-		if( 'BASE64' == $enc_upp ){
-			$content = chunk_split( base64_encode( $content ));
-		}elseif('QUOTED-PRINTABLE' == $enc_upp || 'QP' == $enc_upp ){
+		if( 'BASE64' == $enc_upp && !empty( $content ) ){
+			$content = chunk_split( base64_encode( $content ) );
+		}elseif( ( 'QUOTED-PRINTABLE' == $enc_upp || 'QP' == $enc_upp ) && !empty( $content ) ){
 			$content_transfer_enc = 'quoted-printable';
 			$content = $this->quotedPrintableEncode( $content );
 		}
