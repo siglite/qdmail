@@ -7,16 +7,14 @@ Qdsmtp
 ■ライセンス
 
 　本プログラムはフリーソフトウェアです。
-　GPL (GNU GENERAL PUBLIC LICENSE) Vesrion 3(AGPL) により本プログラムを
-再配布することが可能です。ただし、同ライセンス文における
-「user（users/ユーザ）」および「recipient（受領者）」は、
-本プログラムまたは派生物により構築されたシステム等のサービスを
-HTTPやHTTPS、その他の手段を通じ提供される人とします。
+  The MIT License
+  http://www.opensource.org/licenses/mit-license.php
 
-　もし、GPL以外のライセンスを望む場合は、作者に直接連絡を
-とってください。
+  日本語参考訳
+  http://sourceforge.jp/projects/opensource/wiki/licenses%2FMIT_license
 
-・事前承諾なき場合は、GPLを選択したものとみなします。
+このライセンスを守るのが難しい場合は、作者に連絡をとってください。
 
-■CakePHPとの併用について
-　本プログラムは、CakePHPのコンポーネントとしても動作するよう制作されていますが、CakePHPとは異なるライセンスを採用しています。利用者におかれましては、よくご理解のうえご使用ください。
+■参考
+  CakePHPと同じライセンスです。
+
