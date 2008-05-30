@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.2a
+ * Qdmail ver 0.8.3a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -8,28 +8,17 @@
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail    :  http://hal456.net/qdmail/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
- * Licensed under AGPL3v License
+ * Licensed under The MIT License License
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.2a
- * @lastmodified	2008-05-27
- * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
+ * @version			0.8.3a
+ * @lastmodified	2008-06-01
+ * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
  * easy , quickly , usefull , and you can specify deeply the details.
  * Copyright (C) 2008   spok 
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 //-------------------------------------------
 // For CakePHP , extended 'Object' Class ,
@@ -58,9 +47,9 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.2a';
+	var	$version		= '0.8.3a';
 	var	$xmailer		= 'PHP-Qdmail';
-	var $license 		= 'AGPLv3';
+	var $license 		= 'The_MIT_License';
 	//--------------------
 	// charset , encoding
 	//--------------------
