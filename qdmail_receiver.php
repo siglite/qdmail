@@ -8,28 +8,18 @@
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail    :  http://hal456.net/qdmail_rec/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
- * Licensed under AGPL3v License
+ * Licensed under The MIT License License
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail_rec/
- * @version			0.1.0.alpha
- * @lastmodified	2008-05-17
- * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
+ * @version			0.1.1.alpha
+ * @lastmodified	2008-06-01
+ * @license			The MIT License http://www.opensource.org/licenses/mit-license.php
  * 
  * QdmailReceiver is POP Receive & decorde e-mail library for multibyte language ,
  * easy , quickly , usefull , and you can specify deeply the details.
  * Copyright (C) 2008   spok 
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 //-----------------------------------------------------------------------------
 // QdFunc
@@ -215,8 +205,8 @@ class QdmailReceiverError extends QdmailReceiverDebug{
 class QdDecodeBase extends QdmailReceiverError{
 
 	var $name			= 'QdDecodeBase';
-	var $version			= '0.1.0.alpha';
-	var $x_licese			= 'AGPLv3';
+	var $version			= '0.1.1.alpha';
+	var $x_licese			= 'The_MIT_License';
 	var $x_url				= 'http://hal456.net/qdmail_rec/';
 
 	var $target_charset	= null;
@@ -776,28 +766,17 @@ class QdDecode extends QdDecodeBase{
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail_decode : http://hal456.net/qdmail_rec/
  * & CPA-LAB/Technical      : http://www.cpa-lab.com/tech/
- * Licensed under AGPL3v License
+ * Licensed under The MIT License License
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail_rec/
- * @version			0.1.0alafa
- * @lastmodified	2008-05-02
- * @license			http://www.gnu.org/licenses/agpl-3.0.html AGPLv3
+ * @version			0.1.1alafa
+ * @lastmodified	2008-06-01
+ * @license			The MIT License http://www.opensource.org/licenses/mit-license.php
  * 
  * Qdmail is sending e-mail library for multibyte language ,
  * easy , quickly , usefull , and you can specify deeply the details.
  * Copyright (C) 2008   spok 
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 class QdPopBase extends QdDecodeBase{
