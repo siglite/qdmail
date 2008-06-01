@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.3a
+ * Qdmail ver 0.8.4a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.3a
+ * @version			0.8.4a
  * @lastmodified	2008-06-01
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
@@ -1885,7 +1885,7 @@ $this->debugEcholine(3,__LINE__);
 			$content_transfer_enc = $enc;
 		}
 		// fix crlf
-		$content = $this->clean($content);
+		list($content,$void) = $this->clean($content);
 		// Content_replace
 		if( $this->simple_replace ){
 			$content = $this->replace( $content , $this->to[0] );
@@ -2404,16 +2404,14 @@ $this->debugEcholine(3,__LINE__);
 			$this->error[]='Wordwrap length illegal , need more than 1 line->'.__LINE__;
 		}
 		$ret = array();
-		$word = $this->clean( $word );
-		$lines = explode( $this->LFC , $word ) ;
+		list( $word , $LFC ) = $this->clean( $word );
+		$lines = explode( $LFC , $word ) ;
 		foreach($lines as $line){
 			$ret []= $this->mbWordwrapLine( $line , $length );
 		}
-		return implode( $this->LFC , $ret );;
+		return implode( $this->LFC , $ret );
 	}
-
 	function mbWordwrapLine( $line , $length ){
-
 		$skip = false;
 		if( 0 != count( $this->wrap_except ) ){
 			foreach($this->wrap_except as $word => $begin_flag ){
@@ -2552,7 +2550,7 @@ $this->debugEcholine(3,__LINE__);
 		}else{
 			$LFC = "\n";
 		}
-		return rtrim( preg_replace( '/\r?\n/' , $LFC , $content ) );
+		return array(rtrim( preg_replace( '/\r?\n/' , $LFC , $content ) ),$LFC);
 	}
 	function quotedPrintableEncode( $word ){
 		if(empty($word)){
@@ -2812,8 +2810,13 @@ $this->debugEcholine(3,__LINE__);
 		}
 
 		echo "<pre>";
-		$out = htmlspecialchars( $this->name . ' Debug: ' . $spacer . trim( $out ) , ENT_QUOTES , $this->qdmail_system_charset );
-		echo  mb_convert_encoding( $out , $this->debug_echo_charset , $this->qdmail_system_charset );
+		$out = $this->name . ' Debug: ' . $spacer . trim( $out );
+		$enc = mb_detect_encoding( $out );
+		if( strtoupper(mb_internal_encoding()) !== strtoupper( $enc ) ){
+			$out = mb_convert_encoding($out,mb_internal_encoding(),$enc);
+		}
+		$out = htmlspecialchars( $out , ENT_QUOTES , mb_internal_encoding() );
+		echo  mb_convert_encoding( $out , $this->debug_echo_charset , mb_internal_encoding() );
 		echo "</pre>";
 
 	}
