@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.4a
+ * Qdmail ver 0.8.5a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.4a
+ * @version			0.8.5a
  * @lastmodified	2008-06-01
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
@@ -47,7 +47,7 @@ class QdmailBase extends QdmailBranch{
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.3a';
+	var	$version		= '0.8.5a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -1943,20 +1943,19 @@ $this->debugEcholine(3,__LINE__);
 
 		$length = 75 - strlen($start) - strlen($end);
 
-		$pointer = 0;
+		$pointer = 1;
+		$cut_start = 0;
 		$line = null;
 		$_ret = array();
 		$max = mb_strlen( $subject ,$charset );
 		while( $pointer <= $max ){
-			$one = mb_substr( $subject , $pointer , 1 , $charset );
-			$bs64len = floor( ( strlen( bin2hex( $line . $one ) ) / 2 ) * 8 / 6 );
-			$bs64len += 4- ( $bs64len % 4 ) ;
+			$line  = mb_substr( $subject , $cut_start , $pointer-$cut_start , $charset );
+			$bs64len = strlen(bin2hex(base64_encode($line)))/2;
 			if( $bs64len <= $length ){
-				$line .= $one ;
 				$pointer ++;
 			}else{
 				$_ret[] = base64_encode($line) ;
-				$line = null ;
+				$cut_start = $pointer;
 			}
 		}
 		$_ret[] = base64_encode( $line );
