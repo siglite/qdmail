@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.5a
+ * Qdmail ver 0.8.6a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.5a
- * @lastmodified	2008-06-01
+ * @version			0.8.6a
+ * @lastmodified	2008-06-18
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -43,11 +43,16 @@ if( !function_exists( 'qd_send_mail' ) ){
 
 class QdmailBase extends QdmailBranch{
 
+	//------------------------
+	// Line Feed Character
+	//------------------------
+	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change "\n"
+	var $LFC_Qmail			= "\n";
 	//----------
 	// sysytem 
 	//----------
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.5a';
+	var	$version		= '0.8.6a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -349,7 +354,6 @@ class QdmailBase extends QdmailBranch{
 	//------------------------
 	// etc
 	//------------------------
-	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change "\n"
 	var	$mta_option			= null ;
 	var	$is_create			= false;
 	var	$validate_addr  	= array('this','validateAddr');
@@ -423,6 +427,9 @@ class QdmailBase extends QdmailBranch{
 		}
 		if( !empty( $param[3] ) ){
 			$this->error_display = $param[2];
+		}
+		if($this->is_qmail()){
+			$this->LFC = $this->LFC_Qmail;
 		}
 		$this->optionNameLink();
 		$this->wordwrapProhibitConstruct();
@@ -716,6 +723,21 @@ class QdmailBase extends QdmailBranch{
 	}
 	function bodyBuildOnce( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function is_qmail(){
+		$ret = ini_get ( 'sendmail_path' );
+		return false!==strpos($ret,'qmail');
+	}
+	function lineFeed( $LFC = null ){
+		if(is_null($LFC)){
+			return $this->LFC;
+		}
+		if(preg_match('/[\r|\n|\r\n]/is',$LFC)){
+			$this->LFC = $LFC;
+			return true;
+		}else{
+			return false;
+		}
 	}
 	//---------------------------------------
 	// something change mode 
