@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.6a
+ * Qdmail ver 0.8.7a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.6a
- * @lastmodified	2008-06-18
+ * @version			0.8.7a
+ * @lastmodified	2008-06-23
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -43,16 +43,19 @@ if( !function_exists( 'qd_send_mail' ) ){
 
 class QdmailBase extends QdmailBranch{
 
-	//------------------------
-	// Line Feed Character
-	//------------------------
+	//----------------------------
+	// Line Feed Character & kana
+	//----------------------------
 	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change "\n"
 	var $LFC_Qmail			= "\n";
+	var $language			= 'ja';
+	var $kana				=  false; // kana header
 	//----------
 	// sysytem 
 	//----------
+	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.6a';
+	var	$version		= '0.8.7a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -572,8 +575,9 @@ class QdmailBase extends QdmailBranch{
 		'smtp_loglevel_link'=> 'bool' ,
 		'inline_mode'		=> 'bool' ,
 		'replace_with_to_priority'=> 'bool' ,
-		'attach_build_once'=> 'bool' ,
-		'body_build_once'=> 'bool' ,
+		'attach_build_once'	=> 'bool' ,
+		'body_build_once'	=> 'bool' ,
+		'kana'				=> 'bool' ,
 		'attach_path'		=> 'string' ,
 		'mta_option'		=> 'string' ,
 		'rep_prefix'		=> 'string' ,
@@ -722,6 +726,9 @@ class QdmailBase extends QdmailBranch{
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function bodyBuildOnce( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function kana( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function is_qmail(){
@@ -1927,10 +1934,15 @@ $this->debugEcholine(3,__LINE__);
 		if( $this->wordwrap_allow && $flag_wrp && false !== $length ){
 			$content = $this->mbWordwrap( $content , $length );
 		}
+
+		$enc_upp = strtoupper($content_transfer_enc);
+		if( $this->kana && 'ja'===$this->language && (('BASE64' === $enc_upp && $this->kana_content_relation) || 'BASE64' !== $enc_upp )){
+			$content = mb_convert_kana( $content , 'K' , $org_char );
+		}
+
 		if( $org_char != $target_char ){
 			$content = mb_convert_encoding( $content , $target_char , $org_char );
 		}
-		$enc_upp = strtoupper($content_transfer_enc);
 		if( 'BASE64' == $enc_upp && !empty( $content ) ){
 			$content = chunk_split( base64_encode( $content ) );
 		}elseif( ( 'QUOTED-PRINTABLE' == $enc_upp || 'QP' == $enc_upp ) && !empty( $content ) ){
@@ -1958,6 +1970,9 @@ $this->debugEcholine(3,__LINE__);
 			return trim(chunk_split($subject, 75, "\r\n "));
 		}
 		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
+		if($this->kana && 'ja'===$this->language){
+			$subject = mb_convert_kana( $subject , 'K' , $enc );
+		}
 		$subject = mb_convert_encoding( $subject , $charset , $enc );
 		$start = "=?" . $charset . "?B?";
 		$end = "?=";
