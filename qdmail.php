@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.7a
+ * Qdmail ver 0.8.8a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.7a
- * @lastmodified	2008-06-23
+ * @version			0.8.8a
+ * @lastmodified	2008-06-25
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.7a';
+	var	$version		= '0.8.8a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -157,13 +157,14 @@ class QdmailBase extends QdmailBranch{
 	var	$deco_kind		= null ;
 	var	$auto_deco_judge= false;
 	var $no_inline_attach_structure = 0;
+	var $deco_def_default = 0;
 	var	$deco_def		=array(
 		array(
 			'OPTION_NAME'	=> array( 'MHTML' , 'INLINE' , 'PC' ),
 			'STRUCTURE'		=> 1,
-			'_CHARSET'		=> null ,
-			'ENC_TEXT'		=> null,
-			'ENC_HTML'		=> null,
+			'_CHARSET'		=> 'iso-2022-jp' ,
+			'ENC_TEXT'		=> '7bit',
+			'ENC_HTML'		=> 'QUOTED-PRINTABLE',
 			'HTML_EXTERNAL'	=> false,
 			'DISPOSITION'	=> true,
 		),
@@ -686,9 +687,8 @@ class QdmailBase extends QdmailBranch{
 	function toSeparate( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
-	function simpleReplace( $bool = null ){
+	function simpleReplace( $bool = true ){
 		$this->toSeparate( $bool );
-		$this->bodyBuildOnce( !$bool );
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function autoDecoJudge( $bool = null ){
@@ -989,11 +989,7 @@ class QdmailBase extends QdmailBranch{
 	// fix Decoration Pattern by STRING means CareerName
 	function decoFix( $deco_kind = null ){
 		if( is_null( $deco_kind ) ){
-			if( isset( $this->deco_def[$this->deco_kind] ) ){
-				return $this->deco_def[$this->deco_kind]['OPTION_NAME']['0'];
-			}else{
-				return $this->errorGather('Illegal Decoration Name' ,__LINE__) ;
-			}
+			return $this->deco_def_default;//$this->deco_judge
 		}
 		$deco_kind = strtoupper( $deco_kind );
 		$ret = false ;
@@ -1011,21 +1007,21 @@ class QdmailBase extends QdmailBranch{
 		$addr=$addr_array[$this->tokey['_ADDR']];
 		$start = strrpos( $addr , '@');
 		if(empty($start)){
-			return null;
+			return $this->deco_def_default;
 		}
 		$right = substr($addr , $start+1);
 		$parts = explode('.',$right);
 		$ct = count($parts);
-		if( 3 > $ct ){
-			return null;
+		if( 2 > $ct ){
+			return $this->deco_def_default;
 		}
-		$domain = $parts[$ct-3] . '.' . $parts[$ct-2] . '.' . $parts[$ct-1];
-
-		if( isset( $this->deco_judge[$domain] ) ){
-			return $this->decoFix($this->deco_judge[$domain]);
+		if(2===$ct){
+			$parts3 = null;
 		}else{
-			return null;
+			$parts3 = $parts[$ct-3].'.';
 		}
+		$domain =  $parts3 . $parts[$ct-2] . '.' . $parts[$ct-1];
+		return $this->decoFix(isset( $this->deco_judge[$domain] ) ? $this->deco_judge[$domain]:null);
 	}
 	//------------------------------------
 	//
@@ -1552,7 +1548,6 @@ class QdmailBase extends QdmailBranch{
 			}
 		}
 		if( !empty( $content ) ){
-
 			if( !is_array($content) ){
 				$temp = $content;
 				$content= array();
@@ -1639,10 +1634,8 @@ $this->debugEcholine(1,__LINE__);
 $this->debugEcholine(2,__LINE__);
 
 		}
-
 		if( !$this->body_build_once || ($this->body_build_once && !$this->body_already_build) ){
 			$this->renderBody();//including Content-type Header
-
 $this->debugEcholine(3,__LINE__);
 
 		}
@@ -1937,7 +1930,7 @@ $this->debugEcholine(3,__LINE__);
 
 		$enc_upp = strtoupper($content_transfer_enc);
 		if( $this->kana && 'ja'===$this->language && (('BASE64' === $enc_upp && $this->kana_content_relation) || 'BASE64' !== $enc_upp )){
-			$content = mb_convert_kana( $content , 'K' , $org_char );
+			$content = mb_convert_kana( $content , 'KV' , $org_char );
 		}
 
 		if( $org_char != $target_char ){
@@ -1971,7 +1964,7 @@ $this->debugEcholine(3,__LINE__);
 		}
 		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
 		if($this->kana && 'ja'===$this->language){
-			$subject = mb_convert_kana( $subject , 'K' , $enc );
+			$subject = mb_convert_kana( $subject , 'KV' , $enc );
 		}
 		$subject = mb_convert_encoding( $subject , $charset , $enc );
 		$start = "=?" . $charset . "?B?";
