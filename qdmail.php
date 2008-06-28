@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.8a
+ * Qdmail ver 0.8.9a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.8a
- * @lastmodified	2008-06-25
+ * @version			0.8.9a
+ * @lastmodified	2008-06-28
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.8a';
+	var	$version		= '0.8.9a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -292,6 +292,7 @@ class QdmailBase extends QdmailBranch{
 	var	$deco_judge		= array(
 		'docomo.ne.jp'=>'DC',
 		'softbank.ne.jp'=>'SB',
+		'i.softbank.ne.jp'=>'PC',
 		'vodafone.ne.jp'=>'SB',
 		'ezweb.ne.jp'=>'AU',
 		'emnet.ne.jp'=>'EM',
@@ -310,6 +311,7 @@ class QdmailBase extends QdmailBranch{
 	var	$receipt		= array()	;
 	var	$allways_bcc	= null ;
 	var	$header			= array()	;
+	var	$other_header	= array()	;
 	var $header_content_type = array();
 	var $content		= array(
 		'TEXT'=>array(
@@ -1015,12 +1017,9 @@ class QdmailBase extends QdmailBranch{
 		if( 2 > $ct ){
 			return $this->deco_def_default;
 		}
-		if(2===$ct){
-			$parts3 = null;
-		}else{
-			$parts3 = $parts[$ct-3].'.';
-		}
-		$domain =  $parts3 . $parts[$ct-2] . '.' . $parts[$ct-1];
+		$parts4 = ( 3 < $ct ) ? $parts[$ct-4].'.':null;
+		$parts3 = ( 2 < $ct ) ? $parts[$ct-3].'.':null;
+		$domain =  $parts4 . $parts3 . $parts[$ct-2] . '.' . $parts[$ct-1];
 		return $this->decoFix(isset( $this->deco_judge[$domain] ) ? $this->deco_judge[$domain]:null);
 	}
 	//------------------------------------
@@ -1103,14 +1102,20 @@ class QdmailBase extends QdmailBranch{
 	function replyto( $addr = null  , $name = null ){
 		return $this->addrs( 'REPLYTO' , $addr , $name , false );
 	}
-	function addHeader( $header_name , $value ){
+	function addHeader( $header_name = null , $value = null){
 		if('REPLY-TO'==strtoupper($header_name)){
 			$header_name = 'REPLYTO' ;
 		}
 		if(isset($this->addr_head_name[strtoupper($header_name)])){
 			return $this->{strtolower($header_name)}( $value , null , true );
+		}		if(is_null($header_name)){
+			return $this->other_header;
 		}
-		$this->header[$header_name] = $value ;
+		if('clear'===strtolower($header_name) && is_null($value)){
+			$this->other_header=array();
+			return ;
+		}
+		$this->other_header[$header_name] = $value ;
 	}
 	function reset( $debugErase = false ){
 
@@ -1721,7 +1726,7 @@ $this->debugEcholine(3,__LINE__);
 				isset($this->subject['_ORG_CHARSET']) ? $this->subject['_ORG_CHARSET'] : null
 			);
 		}
-	$this->header = $header ;
+	$this->header = array_merge( $this->other_header , $header ) ;
 	}
 	function renderHeader(){
 		$this->header_for_mailfunction_to = implode( ','.$this->LFC.' ' , $this->header['To'] );
