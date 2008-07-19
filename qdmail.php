@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.8.9a
+ * Qdmail ver 0.9.0a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.8.9a
- * @lastmodified	2008-06-28
+ * @version			0.9.0a
+ * @lastmodified	2008-07-19
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.8.9a';
+	var	$version		= '0.9.0a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -1360,6 +1360,7 @@ class QdmailBase extends QdmailBranch{
 		}
 		if( is_object( $_header) ){
 			$this->smtp_object = & $_header;
+			$this->smtp = true;
 			$header = array();
 		}else{
 			$header = $_header;
@@ -2934,7 +2935,6 @@ EOF;
 			$this->smtp_object -> logLevel( $this->log_level );
 			$this->smtp_object -> errorlogLevel( $this->errorlog_level );
 		}
-
 		$this->smtp_object -> to( $this->receipt );
 		$this->smtp_object -> data( $this->header_for_smtp . $this->LFC . $this->content_for_mailfunction );
 		return $this -> smtp_object -> send();
@@ -2942,16 +2942,30 @@ EOF;
 	//------------------------------------------
 	// expecting Override on the other FrameWork
 	//------------------------------------------
-	function smtpObject(){
+	function & smtpObject( $null = false ){
+		if(is_null($null)){
+			$this->smtp_object = null;
+			return true;
+		}
+		if( isset( $this->smtp_object ) && is_object( $this->smtp_object ) ){
+			return $this->smtp_object;
+		}
 		if( !class_exists ( 'Qdsmtp' ) && file_exists( 'qdsmtp.php' ) ){
 			require_once( 'qdsmtp.php' );
 		}elseif( !class_exists ( 'Qdsmtp' ) && !file_exists( 'qdsmtp.php' )){
 			return $this->errorGather('Plese load SMTP Program - Qdsmtp http://hal456.net/qdsmtp',__LINE__);
 		}
-		$ret = & new Qdsmtp();
-		return $ret;
+		$this->smtp_object = & new Qdsmtp();
+		return $this->smtp_object;
 	}
-
+	function setSmtpObject( & $obj ){
+		if(is_object($obj)){
+			$this->smtp_object = & $obj;
+			return true;
+		}else{
+			return false;
+		}
+	}
 
 }//the QdmailBase
 
@@ -3022,7 +3036,7 @@ class QdmailComponent extends QdmailUserFunc{
 	//----------------------------
 	// Override Parent Method
 	//----------------------------
-	function smtpObject(){
+	function & smtpObject(){
 		if( isset( $this->Qdsmtp ) && is_object( $this->Qdsmtp ) ){
 			return $this->Qdsmtp;
 		}
@@ -3032,12 +3046,12 @@ class QdmailComponent extends QdmailUserFunc{
 				return $this->errorGather('Qdmail<->CakePHP Component Load Error , the name is Qdsmtp',__LINE__);
 			}
 		}
-		$ret = & new QdsmtpComponent();
-		if( !is_object( $ret ) ){
+		$this->Qdsmtp = & new QdsmtpComponent();
+		if( !is_object( $this->Qdsmtp ) ){
 				return $this->errorGather('Qdmail<->CakePHP Component making Instance Error , the name is QdsmtpComponent',__LINE__);
 		}
-		$ret -> startup( $this->Controller );
-		return $ret;
+		$this->Qdsmtpt -> startup( $this->Controller );
+		return $this->Qdsmtp;
 	}
 	//----------------------------
 	// Cake Interface
