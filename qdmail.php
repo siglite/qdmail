@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.9.0a
+ * Qdmail ver 0.9.1a
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.9.0a
- * @lastmodified	2008-07-19
+ * @version			0.9.1a
+ * @lastmodified	2008-07-24
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.9.0a';
+	var	$version		= '0.9.1a';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -3050,7 +3050,7 @@ class QdmailComponent extends QdmailUserFunc{
 		if( !is_object( $this->Qdsmtp ) ){
 				return $this->errorGather('Qdmail<->CakePHP Component making Instance Error , the name is QdsmtpComponent',__LINE__);
 		}
-		$this->Qdsmtpt -> startup( $this->Controller );
+		$this->Qdsmtp -> startup( $this->Controller );
 		return $this->Qdsmtp;
 	}
 	//----------------------------
