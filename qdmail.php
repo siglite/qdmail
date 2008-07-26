@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.9.1a
+ * Qdmail ver 0.9.2
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.9.1a
- * @lastmodified	2008-07-24
+ * @version			0.9.2
+ * @lastmodified	2008-07-26
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.9.1a';
+	var	$version		= '0.9.2';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -292,11 +292,12 @@ class QdmailBase extends QdmailBranch{
 	var	$deco_judge		= array(
 		'docomo.ne.jp'=>'DC',
 		'softbank.ne.jp'=>'SB',
-		'i.softbank.ne.jp'=>'PC',
+		'i.softbank.ne.jp'=>'SB',
 		'vodafone.ne.jp'=>'SB',
 		'ezweb.ne.jp'=>'AU',
 		'emnet.ne.jp'=>'EM',
 		'pdx.ne.jp'=>'WL',
+		'gmail.com'=>'DC',
 	);
 	//------------------
 	// using address and content
@@ -2208,7 +2209,7 @@ $this->debugEcholine(3,__LINE__);
 			}
 		}
 		if($add){
-			$this->sttach = array_merge( $stack , $this->attach );
+			$this->attach = array_merge( $stack , $this->attach );
 		}
 		return $this->errorGather() ;
 	}
