@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.0b
+ * Qdmail ver 1.0.1b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.0b
- * @lastmodified	2008-08-02
+ * @version			1.0.1b
+ * @lastmodified	2008-08-06
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -71,7 +71,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.0b';
+	var	$version		= '1.0.1b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -309,6 +309,7 @@ class QdmailBase extends QdmailBranch{
 		'docomo.ne.jp'=>'DC',
 		'softbank.ne.jp'=>'SB',
 		'i.softbank.ne.jp'=>'SB',
+		'disney.ne.jp'=>'SB',
 		'vodafone.ne.jp'=>'SB',
 		'ezweb.ne.jp'=>'AU',
 		'emnet.ne.jp'=>'EM',
