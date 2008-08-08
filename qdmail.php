@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.9.4
+ * Qdmail ver 0.9.4.001
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.9.4
- * @lastmodified	2008-08-08
+ * @version			0.9.4.001
+ * @lastmodified	2008-08-09
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.9.4';
+	var	$version		= '0.9.4.001';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -1980,10 +1980,11 @@ $this->debugEcholine(3,__LINE__);
 	}
 
 	function mime_string( $subject , $charset , $org_charset = null  ) {
-		if( empty($subject) || ( 0 === preg_match( '/[^\w\s0-9\.]/' , $subject ) ) ){
+
+		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
+		if( empty($subject) || ( strlen(bin2hex($subject))/2 == mb_strlen($subject,$enc) ) ){
 			return trim(chunk_split($subject, 75, "\r\n "));
 		}
-		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
 		if($this->kana && 'ja'===$this->language){
 			$subject = mb_convert_kana( $subject , 'KV' , $enc );
 		}
@@ -2012,25 +2013,6 @@ $this->debugEcholine(3,__LINE__);
 		$_ret[] = base64_encode( $line );
 		$ret = $start . implode( $spacer , $_ret ) . $end;
 		return $ret ;
-	}
-
-	function _mime_string( $subject , $charset , $org_charset = null  ) {
-		if( ! preg_match( '/[^\w\s0-9\.]/' , $subject ) ){
-			return trim(chunk_split($subject, 75, "\r\n "));
-		}
-		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
-		$subject = mb_convert_encoding( $subject , $charset , $enc );
-		$start = "=?" . $charset . "?B?";
-		$end = "?=";
-		$spacer = $end . "\r\n " . $start;
-		$length = 75 - strlen($start) - strlen($end);
-		$length = $length - ($length % 4);// base64 is each 4char convert
-		$subject = base64_encode($subject);
-		$subject = chunk_split($subject, $length, $spacer);
-		$spacer = preg_quote($spacer);
-		$subject = preg_replace("/" . $spacer . "$/", "", $subject);
-		$subject = $start . $subject . $end;
-		return $subject;
 	}
 
 	function _mime_addr( $addr , $add_addr = true ){
