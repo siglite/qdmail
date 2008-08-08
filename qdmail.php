@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.1b
+ * Qdmail ver 1.0.2b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.1b
- * @lastmodified	2008-08-06
+ * @version			1.0.2b
+ * @lastmodified	2008-08-08
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -71,7 +71,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.1b';
+	var	$version		= '1.0.2b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -1075,15 +1075,28 @@ class QdmailBase extends QdmailBranch{
 		if(empty($start)){
 			return $this->deco_def_default;
 		}
-		$right = substr($addr , $start+1);
+		$right = trim(substr($addr , $start+1));
 		$parts = explode('.',$right);
 		$ct = count($parts);
 		if( 2 > $ct ){
 			return $this->deco_def_default;
 		}
-		$parts4 = ( 3 < $ct ) ? $parts[$ct-4].'.':null;
-		$parts3 = ( 2 < $ct ) ? $parts[$ct-3].'.':null;
-		$domain =  $parts4 . $parts3 . $parts[$ct-2] . '.' . $parts[$ct-1];
+		$domains = array();
+		$domains[] =  $parts[$ct-2] . '.' . $parts[$ct-1];
+		if( isset($parts[$ct-3]) ){
+			$domains[] =  $parts[$ct-3] .'.'.$parts[$ct-2] . '.' . $parts[$ct-1];
+		}
+		if( isset($parts[$ct-3]) && isset($parts[$ct-4]) ){
+			$domains[] =  $parts[$ct-4] .'.'. $parts[$ct-3] .'.'.$parts[$ct-2] . '.' . $parts[$ct-1];
+		}
+		$ct = count($domains);
+		$domain = reset($domains);
+		while( $ct-- > 0){
+			if(isset( $this->deco_judge[$domains[$ct]])){
+				$domain = $domains[$ct];
+				break;
+			}
+		}
 		return $this->decoFix(isset( $this->deco_judge[$domain] ) ? $this->deco_judge[$domain]:null);
 	}
 	//------------------------------------
