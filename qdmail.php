@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.2b
+ * Qdmail ver 1.0.3b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.2b
- * @lastmodified	2008-08-08
+ * @version			1.0.3b
+ * @lastmodified	2008-08-13
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -36,10 +36,18 @@ if ( defined('CAKE_CORE_INCLUDE_PATH') || defined('CAKE')) {
 if( !function_exists( 'qd_send_mail' ) ){
 
 	function qd_send_mail( $type , $to = null, $subject = null , $content = null , $other_header = array() , $attach = null, $debug = 0 ){
+		$type_org = $type;
+
+		$mail = & Qdmail::getInstance();
+		$mail->debug = $debug;
+
+		list( $type , $link ) = $mail->keyUpper($type);
 		$option = array();
+		$return = array();
+
 		if( is_array( $type ) ){
 			$type = array_change_key_case( $type , CASE_UPPER ) ;
-			$option = (isset($type['OPTION']) && is_array($type['OPTION'])) ? $type['OPTION'] : array();
+			$option = (isset($type['OPTION']) && is_array($type['OPTION'])) ? $type['OPTION'] : array();			$return = (isset($type['RETURN']) && is_array($type['RETURN'])) ? $type['RETURN'] : array();
 			if(isset($type['SMTP'])){
 				$option = array_merge($option,array('SMTP'=>true,'smtpServer'=>$type['SMTP']));
 			}
@@ -49,11 +57,20 @@ if( !function_exists( 'qd_send_mail' ) ){
 		$_type=array('Text'=>true,'Html'=>true,'Deco'=>true );
 		$type = ucfirst(strtolower($type));
 		$easy_method = isset($_type[$type]) ? 'easy'.$type:false;
-		$mail = & Qdmail::getInstance();
-		$mail->debug = $debug;
 
-		return $mail->{$easy_method}( $to , $subject , $content , $other_header , $attach , $option );
+		$ret = $mail->{$easy_method}( $to , $subject , $content , $other_header , $attach , $option );
 
+		foreach($return as $method => $value ){
+			if(method_exists($mail,$method)){
+				$type_org[$link['RETURN']][$method] = $mail -> {$method}($value);
+			}
+		}
+		if(0!==count($return)){
+			$type_org[$link['RETURN']]['qd_send_mail'] = $ret;
+			$ret = $type_org;
+		}
+
+		return $ret;
 	}
 }
 
@@ -71,7 +88,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.2b';
+	var	$version		= '1.0.3b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -376,6 +393,11 @@ class QdmailBase extends QdmailBranch{
 	'pop_pass'	=> null,
 	);
 	//------------------------
+	// render Mode
+	//------------------------
+	var $render_mode		= false;
+	var $size			= array();
+	//------------------------
 	// etc
 	//------------------------
 	var $keep_parameter		= array(false);
@@ -634,6 +656,7 @@ class QdmailBase extends QdmailBranch{
 		'attach_build_once'	=> 'bool' ,
 		'body_build_once'	=> 'bool' ,
 		'kana'				=> 'bool' ,
+		'render_mode'			=> 'bool' ,
 		'keep_parameter'	=> 'array' ,
 		'attach_path'		=> 'string' ,
 		'mta_option'		=> 'string' ,
@@ -790,6 +813,49 @@ class QdmailBase extends QdmailBranch{
 	}
 	function keepParameter( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function renderMode( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function size( $kind = null ){
+
+		if(empty($this->header_for_smtp)){
+			$stack = $this->render_mode;
+			$this->render_mode = true;
+			$fg = $this->send();
+			$this->render_mode = $stack;
+		}
+
+		$this->size['ALL'] = strlen( bin2hex( $this->header_for_smtp . $this->LFC . $this->content_for_mailfunction )) / 2;
+		$this->size['HEADER'] = strlen( bin2hex( $this->header_for_smtp )) / 2;
+		$this->size['BODY'] = strlen( bin2hex( $this->content_for_mailfunction )) / 2;
+
+		if(is_null($kind)){
+			return $this->size;
+		}
+		$kind = strtoupper( $kind );
+		if(isset($this->size[$kind])){
+			return $this->size[$kind];
+		}
+		return false;
+	}
+	function sizeAll(){
+		return $this->size('ALL');
+	}
+	function sizeHeader(){
+		return $this->size('HEADER');
+	}
+	function sizeBody(){
+		return $this->size('BODY');
+	}
+	function smtpData(){
+		if(empty($this->header_for_smtp)){
+			$stack = $this->render_mode;
+			$this->render_mode = true;
+			$fg = $this->send();
+			$this->render_mode = $stack;
+		}
+		return  $this->header_for_smtp . $this->LFC . $this->content_for_mailfunction ;
 	}
 	function is_qmail(){
 		$ret = ini_get ( 'sendmail_path' );
@@ -1524,7 +1590,7 @@ class QdmailBase extends QdmailBranch{
 		// for smtp
 		$this->extractReceipt() ;
 		$fg = true;
-		$fg_debug = ( 2 > $this->debug ) ;
+		$fg_debug = ( 2 > $this->debug ) && !$this->render_mode;
 		if( $fg_debug && (  ( 0 === count( $this->error ) ) && ( 0 === count( $this->error_stack ) ) ) || $this->ignore_error ) {
 			//
 			//  mail or SMTP(FUTURE)
@@ -2173,8 +2239,8 @@ $this->debugEcholine(3,__LINE__);
 		if(is_string($param)){
 			$param = array($param);
 		}
-		$test = reset($param);
-		if(!is_array($test)){
+		$te_st = reset($param);
+		if(!is_array($te_st)){
 			$param = array( $param );
 		}
 		foreach($param as $par){
@@ -2614,7 +2680,7 @@ $this->debugEcholine(3,__LINE__);
 				$message .= ' line -> '.$line;
 			}
 			if(0 === count( $this->error_stack )){
-				$this->error[] = 'Version '.$this->version;
+				$this->error[] = 'Qdmail Version '.$this->version.' ,PHP Version '.phpversion();
 			}
 			$this->error[] = $message ;
 		}elseif( 0 === count( $this->error ) ){
@@ -2634,14 +2700,14 @@ $this->debugEcholine(3,__LINE__);
 	function log( $mes = null ){
 		if( is_null( $mes )){
 			$addrs = $this->done() ;
-			$this->done = array();
+//			$this->done = array();
 			$spacer = null;
 			if( 0 != count( $addrs ) ){
 				$mes .= 'Send Success: '.implode(' ',$addrs) ;
 				$spacer =  $this->log_LFC ;
 			}
 			$addrs = $this->undone() ;
-			$this->undone = array();
+//			$this->undone = array();
 			if( 0 != count( $addrs ) ){
 				$mes .=  $spacer . 'Send failure: '.implode(' ',$addrs);
 			}
@@ -2653,14 +2719,14 @@ $this->debugEcholine(3,__LINE__);
 
 		$tp = ('error' == $type) ? false:true;
 		$level		=	$tp ? $this->log_level:$this->errorlog_level;
-		if( 0 == $level ){
+		$fg_debug = ( 2 > $this->debug ) && !$this->render_mode;
+		if( 0 == $level || !$fg_debug){
 			return true;
 		}
 
 		$filename	=	$tp ? $this->log_filename:$this->errorlog_filename;
 		$path		=	$tp ? $this->log_path:$this->errorlog_path;
 		$ap			=	$tp ? $this->log_append:$this->errorlog_append;
-
 		$fp = fopen( $path.$filename , $ap );
 		if( !is_resource( $fp ) ){
 			$this->error[]='file open error at logWrite() line->'.__LINE__;
