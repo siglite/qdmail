@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.3b
+ * Qdmail ver 1.0.4b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.3b
- * @lastmodified	2008-08-13
+ * @version			1.0.4b
+ * @lastmodified	2008-08-18
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -40,19 +40,19 @@ if( !function_exists( 'qd_send_mail' ) ){
 
 		$mail = & Qdmail::getInstance();
 		$mail->debug = $debug;
-
+		if(!is_array($type)){
+			$type = array('TYPE'=>$type);
+		}
 		list( $type , $link ) = $mail->keyUpper($type);
 		$option = array();
 		$return = array();
 
-		if( is_array( $type ) ){
-			$type = array_change_key_case( $type , CASE_UPPER ) ;
-			$option = (isset($type['OPTION']) && is_array($type['OPTION'])) ? $type['OPTION'] : array();			$return = (isset($type['RETURN']) && is_array($type['RETURN'])) ? $type['RETURN'] : array();
-			if(isset($type['SMTP'])){
-				$option = array_merge($option,array('SMTP'=>true,'smtpServer'=>$type['SMTP']));
-			}
-			$type = isset($type['TYPE']) ? $type['TYPE']:'text';
+		$type = array_change_key_case( $type , CASE_UPPER ) ;
+		$option = (isset($type['OPTION']) && is_array($type['OPTION'])) ? $type['OPTION'] : array();			$return = (isset($type['RETURN']) && is_array($type['RETURN'])) ? $type['RETURN'] : array();
+		if(isset($type['SMTP'])){
+			$option = array_merge($option,array('SMTP'=>true,'smtpServer'=>$type['SMTP']));
 		}
+		$type = isset($type['TYPE']) ? $type['TYPE']:'text';
 
 		$_type=array('Text'=>true,'Html'=>true,'Deco'=>true );
 		$type = ucfirst(strtolower($type));
@@ -88,7 +88,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.3b';
+	var	$version		= '1.0.4b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
