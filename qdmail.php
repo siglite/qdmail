@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 0.9.4.001
+ * Qdmail ver 0.9.4.002
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			0.9.4.001
- * @lastmodified	2008-08-09
+ * @version			0.9.4.002
+ * @lastmodified	2008-08-20
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -55,7 +55,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '0.9.4.001';
+	var	$version		= '0.9.4.002';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -2320,7 +2320,7 @@ $this->debugEcholine(3,__LINE__);
 			$content_disposition = 'inline';//attachment for au?
 		}else{
 			$content_id =  null ;
-			$content_disposition = 'attachement';
+			$content_disposition = 'attachment';
 		}
 
 		// do it need Disposition Heaer ?
