@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.6b
+ * Qdmail ver 1.0.7b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.6b
+ * @version			1.0.7b
  * @lastmodified	2008-08-27
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
@@ -89,7 +89,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.5b';
+	var	$version		= '1.0.7b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -1587,7 +1587,7 @@ class QdmailBase extends QdmailBranch{
 				}
 				return $ret;
 			}else{
-				$_addr = $addr[0];
+				$_addr = $this->extractAddr( $addr[0] );
 				$_name = isset($addr[1]) ? $addr[1]:null;
 				$ret[] = array($this->tokey['_ADDR'] => $_addr , $this->tokey['_NAME'] => $_name);
 			}
