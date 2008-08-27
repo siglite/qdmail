@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.4a
+ * Qdsmtp ver 0.1.5a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.4a
- * @lastmodified	2008-06-01
+ * @version			0.1.5a
+ * @lastmodified	2008-08-27
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -524,10 +524,10 @@ class QdsmtpBase extends QdsmtpError{
 						$contine = false ;
 					break;
 					case 'F': // Failure
-						return array( false , $message , $st );
+						return array( $this->errorGather('Failure :status'.$st.' message:'.htmlspecialchars($_message).' on '.htmlspecialchars($put_message),__LINE__) , $message , $st );
 					break;
 					case 'E': // Error
-						return array( false , $message , $st );
+						return array( $this->errorGather('Error :status'.$st.' message:'.htmlspecialchars($_message).' on '.htmlspecialchars($put_message),__LINE__) , $message , $st );
 					break;
 					default:
 						$s100 = (int) substr( $st , 0 , 1 );
@@ -535,7 +535,7 @@ class QdsmtpBase extends QdsmtpError{
 						$s = $this->smtp_status100[$s100] * $this->smtp_status10[$s10];
 						switch($s){
 							case 0: // Error
-								return array( false , $message , $st );
+								return array( $this->errorGather('Unkown Error :status'.$st.' message:'.htmlspecialchars($_message).' on '.htmlspecialchars($put_message),__LINE__) , $message , $st );
 							break;
 							case 3: //22X,220
 								$contine = true ;
