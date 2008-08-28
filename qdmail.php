@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.7b
+ * Qdmail ver 1.0.8b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.7b
- * @lastmodified	2008-08-27
+ * @version			1.0.8b
+ * @lastmodified	2008-08-28
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -89,7 +89,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.7b';
+	var	$version		= '1.0.8b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -395,7 +395,20 @@ class QdmailBase extends QdmailBranch{
 				),
 			'OMIT'		=>	false,
 			),
-
+/* Future , PGP
+		7 => array(
+			'multipart/mixed' => array(
+				'multipart/signed'=>array(
+					'plain'		=>	1,
+					'application/pkcs7-signature' =>	1,
+					'OMIT'		=>	false,
+					),
+				'OMIT'		=>	false,
+				),
+			'image'		=>	'NOT_INLINE',
+			'OMIT'		=>	true,
+			),
+*/
 	);
 	var	$deco_judge		= array(
 		'docomo.ne.jp'=>'DC',
@@ -475,6 +488,16 @@ class QdmailBase extends QdmailBranch{
 	//------------------------
 	var $render_mode		= false;
 	var $size			= array();
+	//------------------------
+	// Priority 
+	//------------------------
+	var $priority			= null;
+	var $priority_def   =array(
+		'X-Priority'		=> array( 'HIGH' => 1 , 'NORMAL' => 3 , 'LOW' =>5 ),
+		'X-MsMail-Priotiry'	=> array( 'HIGH'=>'High' , 'NORMAL'=>'Normal' , 'LOW'=>'Low' ),
+		'Priotiry'			=> array( 'HIGH'=>'urgent' , 'NORMAL' => 'normal' , 'LOW'=> 'non-urgent' ),
+		'Importance'		=> array( 'HIGH' =>'High' , 'NORMAL'=>'Normal' ,'LOW' =>'Low' ),
+	);
 	//------------------------
 	// etc
 	//------------------------
@@ -825,6 +848,7 @@ class QdmailBase extends QdmailBranch{
 		'wrap_prohibit_top'	=> 'string' ,
 		'wrap_prohibit_end'	=> 'string' ,
 		'framework'			=> 'string' ,
+		'priority'			=> 'string' ,
 		'mb_strwidth_magni'	=> 'numeric' ,
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
@@ -1065,6 +1089,21 @@ class QdmailBase extends QdmailBranch{
 			return false ; 
 		}
 	}
+	function priority( $option = null ){
+		$fg=$this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+		$priority = strtoupper($option);
+		if(empty($priority)){
+			return $fg;
+		}
+		$kind = array('HIGH'=>1,'NORMAL'=>1,'LOW'=>1);
+		if( !isset( $kind[$priority] ) ){
+			return $this->errorGather('Illegal Priority Name \''.$option.'\'',__LINE__);
+		}
+		foreach($this->priority_def as $header_name => $values){
+			$this->addHeader($header_name,$values[$priority]);
+		}
+		return $this->errorGather();
+	}
 	function framework( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
@@ -1097,6 +1136,12 @@ class QdmailBase extends QdmailBranch{
 	}
 	function smtpServer( $array = null ){
 		return $this->option( array( __FUNCTION__ => $array ) ,__LINE__, true , true );
+	}
+	//------------------
+	//version
+	//------------------
+	function version(){
+		return $this->version;
 	}
 	//-----------------------------------------
 	// Address and Name Keys change Opiton
