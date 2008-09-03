@@ -198,6 +198,9 @@ class QdsmtpBase extends QdsmtpError{
 		if( isset( $param['PROTOCOL'] ) && is_array($param['PROTOCOL'] ) ){
 			$param['PROTOCOL'] = array_change_key_case( $param['PROTOCOL'] , CASE_UPPER );
 		}
+		if( isset( $param['ALWAYS_NOTIFY'] ) && is_bool($param['ALWAYS_NOTIFY']) ){
+			$this->always_notify_success = $param['ALWAYS_NOTIFY'];
+		}
 		$this->smtp_param = array_merge( $this->smtp_param , $param );
 		if( isset( $this->smtp_param['CONTINUE'] ) ){
 			$this->continue = $this->smtp_param['CONTINUE'];
