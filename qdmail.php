@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.8b
+ * Qdmail ver 1.0.9b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.8b
- * @lastmodified	2008-08-28
+ * @version			1.0.9b
+ * @lastmodified	2008-09-05
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -26,6 +26,10 @@
 // At normal PHP Script or another Framework ,
 // 'QdmailBranch' means Dummy Base Class .
 //-------------------------------------------
+if (!defined('QD_DS')) {
+	define('QD_DS', DIRECTORY_SEPARATOR);
+}
+
 if ( defined('CAKE_CORE_INCLUDE_PATH') || defined('CAKE')) {
 	class QdmailBranch extends Object{
 	}
@@ -78,6 +82,15 @@ if( !function_exists( 'qd_send_mail' ) ){
 class QdmailBase extends QdmailBranch{
 
 	//----------------------------
+	// Default Language
+	// If you do not Japanese 
+	// Please change this propaty for your Language and Encoding
+	//----------------------------
+	var	$lang_def			= "ja";
+	var	$encoding_def		= "utf-8";
+	var	$detect_def		= array('ASCII','JIS','UTF-8','EUC-JP','SJIS');
+	var $mb_parameter_stack = null;
+	//----------------------------
 	// Line Feed Character & kana
 	//----------------------------
 	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change "\n"
@@ -89,7 +102,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.8b';
+	var	$version		= '1.0.9b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -395,20 +408,6 @@ class QdmailBase extends QdmailBranch{
 				),
 			'OMIT'		=>	false,
 			),
-/* Future , PGP
-		7 => array(
-			'multipart/mixed' => array(
-				'multipart/signed'=>array(
-					'plain'		=>	1,
-					'application/pkcs7-signature' =>	1,
-					'OMIT'		=>	false,
-					),
-				'OMIT'		=>	false,
-				),
-			'image'		=>	'NOT_INLINE',
-			'OMIT'		=>	true,
-			),
-*/
 	);
 	var	$deco_judge		= array(
 		'docomo.ne.jp'=>'DC',
@@ -458,6 +457,8 @@ class QdmailBase extends QdmailBranch{
 	var	$header_for_mailfunction_subject;
 	var	$header_for_mailfunction_other;
 	var	$content_for_mailfunction;
+	var $header_for_smtp_array;
+	var $content_all_for_smtp;
 	var	$header_for_smtp;
 	//--------------
 	// attachament
@@ -498,6 +499,21 @@ class QdmailBase extends QdmailBranch{
 		'Priotiry'			=> array( 'HIGH'=>'urgent' , 'NORMAL' => 'normal' , 'LOW'=> 'non-urgent' ),
 		'Importance'		=> array( 'HIGH' =>'High' , 'NORMAL'=>'Normal' ,'LOW' =>'Low' ),
 	);
+	//------------------------
+	// signed
+	//------------------------
+	var $sign						=	false;
+	var $smime						=	false;
+	var $pgp						=	false;
+	var $private_key_file			= 'private.pem';
+	var $certificate_file			= 'cert.pem';
+	var $certificate_pass			=  null;
+	var $certificate_file_path		=  null;
+	var $certificate_temp_path		=  null;
+	var $certificate_file_path_win	= 'c:\cert';
+	var $certificate_temp_path_win	= 'c:\temp';
+	var $certificate_file_path_unix	= '/user/local/cert';
+	var $certificate_temp_path_unix	= '/tmp';
 	//------------------------
 	// etc
 	//------------------------
@@ -582,6 +598,7 @@ class QdmailBase extends QdmailBranch{
 		$this->optionNameLink();
 		$this->wordwrapProhibitConstruct();
 	}
+
 	function & getInstance(){
 		static $instance = array();
 
@@ -835,7 +852,10 @@ class QdmailBase extends QdmailBranch{
 		'attach_build_once'	=> 'bool' ,
 		'body_build_once'	=> 'bool' ,
 		'kana'				=> 'bool' ,
-		'render_mode'			=> 'bool' ,
+		'render_mode'		=> 'bool' ,
+		'smime'				=> 'bool' ,
+		'pgp'				=> 'bool' ,
+		'sign'				=> 'string' ,
 		'keep_parameter'	=> 'array' ,
 		'attach_path'		=> 'string' ,
 		'mta_option'		=> 'string' ,
@@ -849,6 +869,11 @@ class QdmailBase extends QdmailBranch{
 		'wrap_prohibit_end'	=> 'string' ,
 		'framework'			=> 'string' ,
 		'priority'			=> 'string' ,
+		'certificate_file'	=> 'string' ,
+		'certificate_file_path'	=> 'string' ,
+		'certificate_temp_path'	=> 'string' ,
+		'private_key_file'	=> 'string' ,
+		'certificate_pass'	=> 'string' ,
 		'mb_strwidth_magni'	=> 'numeric' ,
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
@@ -997,6 +1022,41 @@ class QdmailBase extends QdmailBranch{
 	function renderMode( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
+	function smime( $bool = null ){
+		$fg = $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+		if(!extension_loaded ( 'openssl' )){
+			$this->smime = false;
+			if(!$bool){
+				return false;
+			}
+		}
+		return $fg;
+	}
+	function pgp( $bool = null ){
+		// future
+		return true;
+	}
+	function sign( $string = null ){
+		if(false===$string){
+			$this->smime = false;
+			$this->pgp   = false;
+			$this->sign  = false;
+			return true;
+		}
+		if(empty($string)){
+			return $this->sign;
+		}
+		$string = strtoupper($string);
+		if('S/MIME'==$string){
+			$this->smime(true);
+		}elseif('PGP'==$string){
+			$this->pgp(true);
+		}else{
+			return false;
+		}
+		$fg = $this->option( array( __FUNCTION__ => $string ) ,__LINE__);
+		return $fg;
+	}
 	function size( $kind = null ){
 
 		if(empty($this->header_for_smtp)){
@@ -1061,6 +1121,9 @@ class QdmailBase extends QdmailBranch{
 			return false;
 		}
 	}
+	function isWin(){
+		return false!==strpos(PHP_OS,'WIN');
+	}
 	//---------------------------------------
 	// something change mode 
 	//---------------------------------------
@@ -1103,6 +1166,21 @@ class QdmailBase extends QdmailBranch{
 			$this->addHeader($header_name,$values[$priority]);
 		}
 		return $this->errorGather();
+	}
+	function certificatePass( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function certificateFilePath( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function certificateTempPath( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function certificateFile( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function privateKeyFile( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function framework( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
@@ -1314,6 +1392,33 @@ class QdmailBase extends QdmailBranch{
 			return $this->errorSpecify( __FUNCTION__ , __LINE__ );
 		}
 	return $this->errorGather() ;
+	}
+
+	//--------------------------
+	// set Mutibye Parameter
+	//--------------------------
+	function setMbParameter( $lang = null , $internal_enc = null , $detect = null ){
+
+		if(is_array($lang)){
+			mb_language( $lang[0] ) ;
+			mb_internal_encoding( $lang[1] ) ;
+			mb_detect_order( $lang[2] );
+		}elseif( 'STACK'===strtoupper($lang) ){
+			$this->mb_parameter_stack = array(mb_language(),mb_internal_encoding(),mb_detect_order());
+			mb_language( $this->lang_def );
+			mb_internal_encoding( $this->encoding_def );
+			mb_detect_order( $this->detect_def );
+		}else{
+			if( !is_null( $lang ) ){
+				mb_language( $lang ) ;
+			}
+			if( !is_null( $internal_enc ) ){
+				mb_internal_encoding( $internal_enc ) ;
+			}
+			if( !is_null( $detect ) ){
+				mb_detect_order( $detect );
+			}
+		}
 	}
 	//--------------------------------
 	// Decorationable HTML Mail Opiton 
@@ -1721,14 +1826,17 @@ class QdmailBase extends QdmailBranch{
 		if( is_null( $this->start_time )){
 			$this->start_time = microtime();
 		}
+
+		// mb language
+		if( 'neutral' === mb_language() ){
+			$this->setMbParameter('stack');
+		}
+
 		if( is_object( $option ) ){
 			$this->smtp_object = & $option;
 			$this->smtp = true;
 			$option = null ;
 		}
-
-		$this->debugEchoLine('debug: '.$this->debug().', log: '.$this->logLevel().', errorlog: '.$this->errorlogLevel());
-
 		$fg = true;
 		if( true === $this->toSeparate() ){
 			$stack_tos = array( $this->to , $this->cc , $this->bcc );
@@ -1767,6 +1875,8 @@ class QdmailBase extends QdmailBranch{
 			$fg = $this->sendBase() ;
 			$this->is_create = false;
 		}
+
+		$this->setMbParameter($this->mb_parameter_stack);
 		$this->log();
 		//debug
 		$this->debugEcho('END');
@@ -1832,8 +1942,7 @@ class QdmailBase extends QdmailBranch{
 			}
 		}elseif( $fg_debug ){
 			$this->undone = array_merge( $this->undone , $this->to , $this->cc , $this->bcc ) ;
-			$err_mes = $this->smtp ? 'SMTP mail method':'PHP mail function';
-			$fg = $this->errorGather('No send . Because '.$err_mes.' replied error' ,__LINE__);;
+			$fg = $this->errorGather('Error happen, see upper' ,__LINE__);;
 		}else{
 			$this->undone = array_merge( $this->undone , $this->to , $this->cc , $this->bcc ) ;
 			$fg = true ;
@@ -1845,8 +1954,9 @@ class QdmailBase extends QdmailBranch{
 		}
 		$this->debugEchoLf(
 			$bcc ,
-			$this->header_for_smtp,
-			$this->content_for_mailfunction,
+			$this->content_all_for_smtp,
+//			$this->header_for_smtp,
+//			$this->content_for_mailfunction,
 			$this->LFC.$this->LFC ,
 			date('Y-m-d H:i:s')
 		);
@@ -1906,7 +2016,6 @@ class QdmailBase extends QdmailBranch{
 				$this->is_html = 'TEXT';
 			}
 		}
-		$this->debugEcholine( __FUNCTION__,__LINE__, 'this->deco_kind' , $this->deco_kind );
 		// Select Body Structure
 		if( !isset( $this->deco_kind ) ){
 			$structure_no = 0 ;
@@ -1919,30 +2028,85 @@ class QdmailBase extends QdmailBranch{
 			//only text and html making
 			$this->replaceBodyStructure('TEXT');
 			$this->replaceBodyStructure('HTML');
-
-$this->debugEcholine(1,__LINE__);
-
 		}elseif(
 			($this->body_build_once && !$this->body_already_build)
 			||
 			( !$this->body_build_once && ( !$this->attach_build_once || ( $this->attach_build_once && !$this->attach_already_build ) ) ) 
 				){
 			$this->body_structure = $this->buildBody( $this->structure[$structure_no] ,$boundary, false , $boundary_fix );
-
-$this->debugEcholine(2,__LINE__);
-
 		}
 		if( !$this->body_build_once || ($this->body_build_once && !$this->body_already_build) ){
 			$this->renderBody();//including Content-type Header
-$this->debugEcholine(3,__LINE__);
-
 		}
 
 		$this->header = array_merge($this->header , $this->header_content_type);
 		// user added header
 		$this->headerDefault();
 		$this->renderHeader();
+		//
+		// signed
+		//
+		if( false===$this->sign ){
+			$this->content_all_for_smtp = $this->header_for_smtp . $this->LFC . $this->content_for_mailfunction;
+		}elseif($this->pgp){
+			// future PGP
+		}else{
+			// S/MIME
+			$this->content_all_for_smtp = $this->signSmime();
+			if(false===$this->content_all_for_smtp){
+				return $this->errorGather('Sign Error S/MIME',__LINE__);
+			}
+		}
 		$this->is_create=true;
+	}
+
+	function signSmime(){
+		if( !$this->smtp ){
+			return $this->errorGather('S/MIME needs SMTP Send,now You spcify no smtp',__LINE__);
+		}
+		// Path to certificate file , by Win or other OS
+		if(empty($this->certificate_file_path)){
+			$this->certificate_file_path = $this->isWin() ? $this->certificate_file_path_win : $this->certificate_file_path_unix;
+		}
+		if(empty($this->certificate_temp_path)){
+			$this->certificate_file_path = $this->isWin() ? $this->certificate_file_path_win : $this->certificate_file_path_unix;
+		}
+		$path = $this->certificate_file_path . QD_DS ;
+
+		if('PFX'===strtoupper(substr($this->certificate_file,-3))){
+			if(!function_exists('openssl_pkcs12_read')){
+				return $this->errorGather('You can not specify *.pfx type, please *.pem type becuase your PHP Version do not support \'openssl_pkcs12_read\'',__LINE__);
+			}
+			if(openssl_pkcs12_read(file_get_contents($path.$this->certificate_file),$ret,$this->certificate_pass)){
+				$private_key = $ret['pkey'];
+				$certificate = $ret['cert'];
+			}else{
+				return $this->errorGather('Illegal Certificate File  \''.$path.$this->certificate_file.'\' or Incorrect Password ',__LINE__);
+			}
+		}else{
+			$private_key = file_get_contents( $path . $this->private_key_file );
+			$certificate = file_get_contents( $path . $this->certificate_file );
+		}
+		$temp = sha1($this->content_for_mailfunction).'.txt';
+		$temp_filename = $this->certificate_temp_path.QD_DS.'temp'.$temp;
+		$temp_signed_filename = $this->certificate_temp_path.QD_DS.'temp_signed'.$temp;
+
+		$fp = fopen( $temp_filename , "w" );
+		fputs( $fp , $this->content_for_mailfunction . $this->LFC );
+		fclose($fp);
+		unset($this->header_for_smtp_array['MIME-Version']);
+
+		openssl_pkcs7_sign(
+			$temp_filename,
+			$temp_signed_filename,
+			$certificate,
+			array($private_key, $this->certificate_pass),
+			$this->header_for_smtp_array
+		);
+		$ret = file_get_contents($temp_signed_filename);
+		unlink ( $temp_signed_filename );
+		unlink ( $temp_filename );
+		return  $ret;
 	}
 
 	function replaceBodyStructure( $kind ){
@@ -2026,7 +2190,7 @@ $this->debugEcholine(3,__LINE__);
 		}
 
 		$this->header_for_mailfunction_other = null;
-		$header_for_smtp = null;
+		$header_for_smtp = array();
 		$this->header_for_smtp_bcc = null;
 
 		foreach( $this->header as $key => $value ){
@@ -2036,18 +2200,25 @@ $this->debugEcholine(3,__LINE__);
 				$add = $value;
 			}
 			if( 'BCC' !== strtoupper($key) ){
-				$header_for_smtp .= $key . ': ' . $add . $this->LFC ;
+				$header_for_smtp[$key] =  $add ;
 			}else{
 				$this->header_for_smtp_bcc = $key . ': ' . $add . $this->LFC ;
 			}
 			$this->header_for_mailfunction_other .= $key . ': ' . $add . $this->LFC;
 			unset( $this->header[$key] );
 		}
-		$this->header_for_smtp = 'To: '
-			. $this->header_for_mailfunction_to . $this->LFC
-			. 'Subject: '.$this->header_for_mailfunction_subject . $this->LFC
-			. trim( $header_for_smtp ) . $this->LFC
-		;
+		$header_for_smtp['To'] = $this->header_for_mailfunction_to;
+		$header_for_smtp['Subject'] = $this->header_for_mailfunction_subject;
+
+		$this->header_for_smtp = '';
+
+		foreach($header_for_smtp as $key => $value){
+			$this->header_for_smtp .= $key.': '.$value.$this->LFC;
+		}
+
+		if($this->smime){
+			$this->header_for_smtp_array = $header_for_smtp;
+		}
 	}
 
 	//-------------------------
@@ -2168,11 +2339,15 @@ $this->debugEcholine(3,__LINE__);
 		}elseif( 0 === count( $this->body_structure ) ){
 			$this->body_structure[0]['HEADER'] = array();
 		}
-		foreach( $this->body_structure[0]['HEADER'] as $key => $value){
-			$this->header_content_type[$key]=$value;
+
+		if( !$this->smime ){
+			foreach( $this->body_structure[0]['HEADER'] as $key => $value){
+				$this->header_content_type[$key]=$value;
+			}
+			$this->body_structure[0]['HEADER'] = array();
 		}
+
 		$this->body_structure[0]['BOUNDARY'] = null;
-		$this->body_structure[0]['HEADER'] = array();
 
 		$this->content_for_mailfunction = rtrim($this->finalize( $this->body_structure )) ;
 		$this->body_already_build = true ;
@@ -2942,9 +3117,10 @@ $this->debugEcholine(3,__LINE__);
 			}
 			if(0 === count( $this->error_stack )){
 				$this->error[] = 'Qdmail Version '.$this->version.' ,PHP Version '.phpversion();
+				$this->error[] = $this->iniGather();
 			}
 			$this->error[] = $message ;
-		}elseif( 0 === count( $this->error ) ){
+		}elseif( 0 === count( $this->error )){
 			return true;
 		}
 
@@ -3078,6 +3254,15 @@ $this->debugEcholine(3,__LINE__);
 	//-------------------------------
 	// Debug
 	//-------------------------------
+	function iniGather(){
+		$ret  = 'OS '.PHP_OS.' ; PHP Version '.PHP_VERSION.' ; '.$this->name.' version '.$this->version;
+		$ret .= $this->LFC.'php.ini status: mb_language = '.mb_language()
+				.' ; mb_internal_encoding = '.mb_internal_encoding()
+				.' ; mb_detect_order = '.implode(',',mb_detect_order());
+		$ret .= $this->LFC . $this->name .' Status debug: '.$this->debug().', log: '.$this->logLevel().', errorlog: '.$this->errorlogLevel();
+		return $ret;
+	}
+
 	function debug( $level=null ){
 		if( is_null( $level ) || !is_numeric($level) ){
 			return $this->debug;
@@ -3107,6 +3292,7 @@ $this->debugEcholine(3,__LINE__);
 		if( !$already_header ){
 			$head='<html><head><meta http-equiv="content-type" content="text/html; charset='.$this->debug_echo_charset.'"></head><body>';
 			echo $head ;
+			echo '<pre>'.$this->name . ' Debug: '.$this->iniGather().'</pre>';
 			$already_header = true ;
 		}
 		if( $already_header && ( 'END' === $lf ) && !$already_footer){
@@ -3225,7 +3411,7 @@ EOF;
 			$this->smtp_object -> errorlogLevel( $this->errorlog_level );
 		}
 		$this->smtp_object -> to( $this->receipt );
-		$this->smtp_object -> data( $this->header_for_smtp . $this->LFC . $this->content_for_mailfunction );
+		$this->smtp_object -> data( $this->content_all_for_smtp );
 		return $this -> smtp_object -> send();
 	}
 	//------------------------------------------
