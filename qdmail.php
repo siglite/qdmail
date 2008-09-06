@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.0.9b
+ * Qdmail ver 1.1.0b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.0.9b
- * @lastmodified	2008-09-05
+ * @version			1.1.0b
+ * @lastmodified	2008-09-06
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -102,7 +102,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.0.9b';
+	var	$version		= '1.1.0b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -517,6 +517,7 @@ class QdmailBase extends QdmailBranch{
 	//------------------------
 	// etc
 	//------------------------
+	var $simple_attach		= false;
 	var $keep_parameter		= array(false);
 	var	$mta_option			= null ;
 	var	$is_create			= false;
@@ -631,7 +632,7 @@ class QdmailBase extends QdmailBranch{
 	//--------------------------
 	function makeDecoTemplate( $deco_kind , $content ){
 
-		if(false===($this->deco_kind=$this->decoFix( $deco_kind ))){
+		if(false===($this->deco_kind=$this->decoSelect( $deco_kind ))){
 			return $this->errorGather('Illegal Decoration Kind \''.$deco_kind.'\'',__LINE__);
 		}
 
@@ -855,6 +856,7 @@ class QdmailBase extends QdmailBranch{
 		'render_mode'		=> 'bool' ,
 		'smime'				=> 'bool' ,
 		'pgp'				=> 'bool' ,
+		'simple_attach'		=> 'bool' ,
 		'sign'				=> 'string' ,
 		'keep_parameter'	=> 'array' ,
 		'attach_path'		=> 'string' ,
@@ -1020,6 +1022,9 @@ class QdmailBase extends QdmailBranch{
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function renderMode( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function simpleAttach( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function smime( $bool = null ){
@@ -1428,13 +1433,20 @@ class QdmailBase extends QdmailBranch{
 	// Change decoration default along to each career
 	function decoDef( $value = null ){
 		if( is_null( $value ) ){
-			return $this->deco_def;
+			return $this->deco_def_default;
 		}
-			$this->deco_def = $value ;
+			$this->deco_def_default = $value ;
 		return $this->errorGather() ;
 	}
 	// fix Decoration Pattern by STRING means CareerName
-	function decoFix( $deco_kind = null ){
+	function decoFix( $cari = null ){
+		if(is_null($cari)){
+			return $this->deco_kind;
+		}
+		$this->deco_kind = $this->decoSelect( $cari );
+		return true;
+	}
+	function decoSelect( $deco_kind = null ){
 		if( is_null( $deco_kind ) ){
 			return $this->deco_def_default;//$this->deco_judge
 		}
@@ -1478,7 +1490,7 @@ class QdmailBase extends QdmailBranch{
 				break;
 			}
 		}
-		return $this->decoFix(isset( $this->deco_judge[$domain] ) ? $this->deco_judge[$domain]:null);
+		return $this->decoSelect(isset( $this->deco_judge[$domain] ) ? $this->deco_judge[$domain]:null);
 	}
 	//------------------------------------
 	//
@@ -2666,6 +2678,14 @@ class QdmailBase extends QdmailBranch{
 		if(is_string($param)){
 			$param = array($param);
 		}
+
+		if( ($this->inline_mode || $this->simple_attach) && !is_array($param[0])){
+			foreach($param as $one){
+				$param_temp[] = array( $one );
+			}
+			$param = $param_temp;
+		}
+
 		$te_st = reset($param);
 		if(!is_array($te_st)){
 			$param = array( $param );
@@ -3308,7 +3328,7 @@ class QdmailBase extends QdmailBranch{
 		foreach($vars as $var){
 			$_out = print_r( $var , true ) ;
 			$enc = mb_detect_encoding( $_out );
-			if( strtoupper( $this->qdmail_system_charset ) !== strtoupper( $enc ) ){
+			if( ( strtoupper( $this->qdmail_system_charset ) !== strtoupper( $enc ) ) && ('ASCII'!==strtoupper( $enc ))){
 				$_out = mb_convert_encoding( $_out , $this->qdmail_system_charset , $enc );
 			}
 			$out .=  $_out  . $this->LFC;
@@ -3321,12 +3341,9 @@ class QdmailBase extends QdmailBranch{
 
 		echo "<pre>";
 		$out = $this->name . ' Debug: ' . $spacer . trim( $out );
-		$enc = mb_detect_encoding( $out );
-		if( strtoupper(mb_internal_encoding()) !== strtoupper( $enc ) ){
-			$out = mb_convert_encoding($out,mb_internal_encoding(),$enc);
-		}
-		$out = htmlspecialchars( $out , ENT_QUOTES , mb_internal_encoding() );
-		echo  mb_convert_encoding( $out , $this->debug_echo_charset , mb_internal_encoding() );
+		$out = htmlspecialchars( $out , ENT_QUOTES ,  $this->qdmail_system_charset);
+		$out = mb_convert_encoding($out,$this->debug_echo_charset,$this->qdmail_system_charset);
+		echo $out;
 		echo "</pre>";
 
 	}
