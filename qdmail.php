@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.0b
+ * Qdmail ver 1.1.1b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.0b
- * @lastmodified	2008-09-06
+ * @version			1.1.1b
+ * @lastmodified	2008-09-10
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -90,6 +90,12 @@ class QdmailBase extends QdmailBranch{
 	var	$encoding_def		= "utf-8";
 	var	$detect_def		= array('ASCII','JIS','UTF-8','EUC-JP','SJIS');
 	var $mb_parameter_stack = null;
+	//------------------------
+	// Time Zone
+	//------------------------
+	var $auto_header		= true;
+	var $time_zone			= null; // '+0900' in Japan
+	var $salt				= 'qdmail';
 	//----------------------------
 	// Line Feed Character & kana
 	//----------------------------
@@ -102,7 +108,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.0b';
+	var	$version		= '1.1.1b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -695,6 +701,9 @@ class QdmailBase extends QdmailBranch{
 		if(is_null($other_header)){
 			$other_header=array();
 		}
+
+		$this->resetHeaderBody();
+
 		$option_return = array();
 		if( is_array($type) ){
 			$type = array_change_key_case( $type , CASE_UPPER );
@@ -857,6 +866,7 @@ class QdmailBase extends QdmailBranch{
 		'smime'				=> 'bool' ,
 		'pgp'				=> 'bool' ,
 		'simple_attach'		=> 'bool' ,
+		'auto_header'		=> 'bool' ,
 		'sign'				=> 'string' ,
 		'keep_parameter'	=> 'array' ,
 		'attach_path'		=> 'string' ,
@@ -1027,6 +1037,9 @@ class QdmailBase extends QdmailBranch{
 	function simpleAttach( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
+	function autoHeader( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
 	function smime( $bool = null ){
 		$fg = $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 		if(!extension_loaded ( 'openssl' )){
@@ -1194,6 +1207,9 @@ class QdmailBase extends QdmailBranch{
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function mtaOption( $option = null ){
+		if(ini_get('safe_mode')){
+			return $this->errorGather('You can not specify mtaOption at SafeMode of PHP',__LINE__);
+		}
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function logPath( $option = null ){
@@ -1604,6 +1620,25 @@ class QdmailBase extends QdmailBranch{
 			$this->debug = $stack_debug ; 
 		}
 	}
+	function resetHeader(){
+		$this->to = array();
+		$this->cc = array();
+		$this->bcc = array();
+		$this->from = array();
+		$this->replyto = array();
+		$this->subject = null;
+	}
+	function resetBody(){
+		$this->body('');
+		$this->is_html = null;
+		$this->deco_kind = null;
+		$this->inline_mode = false;
+		$this->attach  = array();
+	}
+	function resetHeaderBody(){
+		$this->resetBody();
+		$this->resetHeader();
+	}
 
 	function _gatherFromArray( $array , $key ){
 		$ret = array();
@@ -1642,7 +1677,30 @@ class QdmailBase extends QdmailBranch{
 		}
 	}
 
-	function body( $type , $cont , $length = null , $charset = null , $enc = null , $org_charset = null ){
+	function body( $type =null , $cont = null , $length = null , $charset = null , $enc = null , $org_charset = null ){
+		if(is_null($type)){
+			return $this->content;
+		}
+		if(empty($type)){
+			$this->content		= array(
+				'TEXT'=>array(
+				'CONTENT'		=> null,
+				'LENGTH'		=> null,
+				'_CHARSET'		=> null,
+				'ENC'			=> null,
+				'_ORG_CHARSET'	=> null,
+			),
+				'HTML'=>array(
+				'CONTENT'		=> null,
+				'ORG_CONTENT'	=> null,
+				'LENGTH'		=> null,
+				'_CHARSET'		=> null,
+				'ENC'			=> null,
+				'_ORG_CHARSET'	=> null,
+				),
+			);
+			return true;
+		}
 		$type = strtolower( $type );
 		if( 'text'!==$type && 'html'!==$type ){
 			return $this->errorGather('You must use \'text\' or \'html\'' ,__LINE__) ;
@@ -1834,6 +1892,11 @@ class QdmailBase extends QdmailBranch{
 		$sendby = $this->smtp ? 'SMTP':'mailfunction';
 		$this->header['X-'.$this->xmailer] .= $this->LFC.' send-by '.$sendby;
 	}
+	function makeMessageId(){
+		$id = 'Qdmail.' . $this->version . sha1(microtime().$this->salt.mt_rand()).'@hal456.net';
+		return '<'.$id.'>';
+	}
+	
 	function send( $option = null ){
 		if( is_null( $this->start_time )){
 			$this->start_time = microtime();
@@ -1849,6 +1912,14 @@ class QdmailBase extends QdmailBranch{
 			$this->smtp = true;
 			$option = null ;
 		}
+		// Date: header
+		if( $this->auto_header){
+			$other = array_change_key_case($this->other_header,CASE_UPPER);
+			if( !isset($other['DATE']) && !is_null($this->time_zone) ){
+				$this->other_header['Date'] =  date('D, d M Y h:i:s ') . $this->time_zone;
+			}
+		}
+
 		$fg = true;
 		if( true === $this->toSeparate() ){
 			$stack_tos = array( $this->to , $this->cc , $this->bcc );
@@ -1916,6 +1987,13 @@ class QdmailBase extends QdmailBranch{
 			$stack_bcc = $this->bcc ;
 			$this->bcc( $this->allways_bcc , null , true );
 		}
+		// Message Id
+		if( $this->auto_header){
+			$other = array_change_key_case($this->other_header,CASE_UPPER);
+			if(!isset($other['MESSAGE-ID'])){
+				$this->other_header['Message-Id'] =  $this->makeMessageId();
+			}
+		}
 		if( !$this->is_create ){
 			$this->body = null;
 			$this->after_id = null;
@@ -1935,6 +2013,13 @@ class QdmailBase extends QdmailBranch{
 			//
 			if( $this->smtp ){
 				$fg = $this->sendBySmtp();
+			}elseif( ini_get('safe_mode') ){
+				$fg = mail( 
+					  trim( $this->header_for_mailfunction_to )
+					, trim( $this->header_for_mailfunction_subject )
+					, $this->content_for_mailfunction
+					, trim( $this->header_for_mailfunction_other )
+				);
 			}else{
 				$fg = mail( 
 					  trim( $this->header_for_mailfunction_to )
