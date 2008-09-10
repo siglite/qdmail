@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.1b
+ * Qdmail ver 1.1.2b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.1b
- * @lastmodified	2008-09-10
+ * @version			1.1.2b
+ * @lastmodified	2008-09-11
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -91,10 +91,10 @@ class QdmailBase extends QdmailBranch{
 	var	$detect_def		= array('ASCII','JIS','UTF-8','EUC-JP','SJIS');
 	var $mb_parameter_stack = null;
 	//------------------------
-	// Time Zone
+	// Time Zone , Message Id
 	//------------------------
-	var $auto_header		= true;
 	var $time_zone			= null; // '+0900' in Japan
+	var $message_id			= true;
 	var $salt				= 'qdmail';
 	//----------------------------
 	// Line Feed Character & kana
@@ -108,7 +108,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.1b';
+	var	$version		= '1.1.2b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -866,7 +866,7 @@ class QdmailBase extends QdmailBranch{
 		'smime'				=> 'bool' ,
 		'pgp'				=> 'bool' ,
 		'simple_attach'		=> 'bool' ,
-		'auto_header'		=> 'bool' ,
+		'message_id'		=> 'bool' ,
 		'sign'				=> 'string' ,
 		'keep_parameter'	=> 'array' ,
 		'attach_path'		=> 'string' ,
@@ -884,6 +884,7 @@ class QdmailBase extends QdmailBranch{
 		'certificate_file'	=> 'string' ,
 		'certificate_file_path'	=> 'string' ,
 		'certificate_temp_path'	=> 'string' ,
+		'time_zone'			=> 'string' ,
 		'private_key_file'	=> 'string' ,
 		'certificate_pass'	=> 'string' ,
 		'mb_strwidth_magni'	=> 'numeric' ,
@@ -1037,7 +1038,7 @@ class QdmailBase extends QdmailBranch{
 	function simpleAttach( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
-	function autoHeader( $bool = null ){
+	function messageId( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function smime( $bool = null ){
@@ -1204,6 +1205,9 @@ class QdmailBase extends QdmailBranch{
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function attachPath( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function timeZone( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function mtaOption( $option = null ){
@@ -1626,6 +1630,7 @@ class QdmailBase extends QdmailBranch{
 		$this->bcc = array();
 		$this->from = array();
 		$this->replyto = array();
+		$this->other_header=array();
 		$this->subject = null;
 	}
 	function resetBody(){
@@ -1913,9 +1918,9 @@ class QdmailBase extends QdmailBranch{
 			$option = null ;
 		}
 		// Date: header
-		if( $this->auto_header){
+		if( !is_null($this->time_zone) ){
 			$other = array_change_key_case($this->other_header,CASE_UPPER);
-			if( !isset($other['DATE']) && !is_null($this->time_zone) ){
+			if( !isset($other['DATE']) ){
 				$this->other_header['Date'] =  date('D, d M Y h:i:s ') . $this->time_zone;
 			}
 		}
@@ -1988,7 +1993,7 @@ class QdmailBase extends QdmailBranch{
 			$this->bcc( $this->allways_bcc , null , true );
 		}
 		// Message Id
-		if( $this->auto_header){
+		if( $this->message_id){
 			$other = array_change_key_case($this->other_header,CASE_UPPER);
 			if(!isset($other['MESSAGE-ID'])){
 				$this->other_header['Message-Id'] =  $this->makeMessageId();
