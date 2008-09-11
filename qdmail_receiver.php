@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail_rec/
- * @version			0.1.1.alpha
- * @lastmodified	2008-06-01
+ * @version			0.1.2.alpha
+ * @lastmodified	2008-09-11
  * @license			The MIT License http://www.opensource.org/licenses/mit-license.php
  * 
  * QdmailReceiver is POP Receive & decorde e-mail library for multibyte language ,
@@ -205,7 +205,7 @@ class QdmailReceiverError extends QdmailReceiverDebug{
 class QdDecodeBase extends QdmailReceiverError{
 
 	var $name			= 'QdDecodeBase';
-	var $version			= '0.1.1.alpha';
+	var $version			= '0.1.2.alpha';
 	var $x_licese			= 'The_MIT_License';
 	var $x_url				= 'http://hal456.net/qdmail_rec/';
 
@@ -551,16 +551,15 @@ class QdDecodeBase extends QdmailReceiverError{
 			if( $_body['attach_flag'] ){
 				$type = 'attach';
 			}
-			$test = trim( $_body['value'] );
-			if( !empty( $test ) ){
-				if(  $type == 'attach' || $type == 'unknown'){
-					$this->attach[] = $_body ;
-					$this->already_attach = true ;
-				}else{
-					$this->body[$type] = $_body ;
-					$this->already_text = true ;
-				}
+
+			if(  $type == 'attach' || $type == 'unknown'){
+				$this->attach[] = $_body ;
+				$this->already_attach = true ;
+			}else{
+				$this->body[$type] = $_body ;
+				$this->already_text = true ;
 			}
+
 		}while( trim( $li ) == '--'.$boundary );
 	return true;
 	}
@@ -698,8 +697,14 @@ class QdDecodeBase extends QdmailReceiverError{
 	// Mime Decode
 	//------------------
 	function qd_decode_mime( $string ){
+/*
 		$string = preg_replace(array('/=?[^=\?\s]+\?[b|p]\?/is','/=\?/is','/[\r|\n|\s|\t]/is'),'',$string);
-		return base64_decode($string);
+		$ret = base64_decode($string);
+		$enc = mb_detect_encoding($ret);
+		$ret = mb_convert_encoding($ret,$enc,$enc);
+*/
+		$ret = mb_decode_mimeheader($string);
+		return $ret;
 	}
 	function splitMime( $var , $address_mode = false){
 		$obj = array();
@@ -758,7 +763,7 @@ class QdDecode extends QdDecodeBase{
 }
 
 /**
- * QdPop ver 0.1.0a
+ * QdPop ver 0.1.2a
  * POP Receiver for PHP
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -770,8 +775,8 @@ class QdDecode extends QdDecodeBase{
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail_rec/
- * @version			0.1.1alafa
- * @lastmodified	2008-06-01
+ * @version			0.1.2alafa
+ * @lastmodified	2008-09-11
  * @license			The MIT License http://www.opensource.org/licenses/mit-license.php
  * 
  * Qdmail is sending e-mail library for multibyte language ,
