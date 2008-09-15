@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail_rec/
- * @version			0.1.3.alpha
- * @lastmodified	2008-09-14
+ * @version			0.1.4.alpha
+ * @lastmodified	2008-09-15
  * @license			The MIT License http://www.opensource.org/licenses/mit-license.php
  * 
  * QdmailReceiver is POP Receive & decorde e-mail library for multibyte language ,
@@ -205,7 +205,7 @@ class QdmailReceiverError extends QdmailReceiverDebug{
 class QdDecodeBase extends QdmailReceiverError{
 
 	var $name			= 'QdDecodeBase';
-	var $version			= '0.1.3.alpha';
+	var $version			= '0.1.4.alpha';
 	var $x_licese			= 'The_MIT_License';
 	var $x_url				= 'http://hal456.net/qdmail_rec/';
 
@@ -228,6 +228,15 @@ class QdDecodeBase extends QdmailReceiverError{
 	var $already_text	= false;// including html
 	var $already_attach	= false;
 	var $already_getMail= false;
+	var $other_multipart = array(
+		'alternative'		=>'skip',
+		'related'			=>'skip',
+		'signed'			=>'skip',
+		'mixed'				=>'skip',
+		'x-mixed-replace'	=>'skip',
+		'parallel'			=>'skip',
+		'encrypted'			=>'skip',
+	);
 
 	//--------------
 	// Constructor 
@@ -521,6 +530,7 @@ class QdDecodeBase extends QdmailReceiverError{
 			}while( !empty( $li ) || '0' === $li );
 
 			$header = $this->buildHeader( $header );
+
 			if( isset( $header['content-type'] ) ){
 				$type = $this->typeJudge( $header['content-type'] );
 				preg_match( '/boundary\s*=\s*"([^"]+)"/is' , $header['content-type'] , $matches );
@@ -557,10 +567,10 @@ class QdDecodeBase extends QdmailReceiverError{
 			if(  $type == 'attach' || $type == 'unknown'){
 				$this->attach[] = $_body ;
 				$this->already_attach = true ;
-			}else{
+			}elseif(  $type == 'text' || $type == 'html'){
 				$this->body[$type] = $_body ;
 				$this->already_text = true ;
-			}
+			}//else $type === 'skip'
 
 		}while( trim( $li ) == '--'.$boundary );
 	return true;
@@ -608,7 +618,8 @@ class QdDecodeBase extends QdmailReceiverError{
 				$ret['attach_flag'] = true;
 		}
 		if( !empty( $header['content-id'] ) ){
-				$ret['content_id'] = $header['content-id'];
+				$ret['content-id'] = $header['content-id'];
+				$ret['content-id_essence'] = trim(trim($header['content-id'],'<>'));
 		}
 
 		// filename
@@ -659,8 +670,25 @@ class QdDecodeBase extends QdmailReceiverError{
 			$type = 'text';
 		}elseif( !empty( $matches[1] ) && 'TEXT/HTML'==strtoupper($matches[1])){
 			$type = 'html';
+		}elseif( !empty( $matches[1] ) ){
+			$slash = strpos( $matches[1] , '/' );
+			if( false !==$slash ){
+				$mime_main = strtolower( substr( $matches[1] , 0 , $slash ) );
+				$mime_sub  = strtolower( substr( $matches[1] , $slash+1 ) );
+				if( 'multipart' === $mime_main ){
+					if(isset($this->other_multipart[$mime_sub]) && 'skip'===$this->other_multipart[$mime_sub]){
+						$type = 'skip';
+					}else{
+						$type = 'unknown';
+					}
+				}else{
+					$type = 'attach';
+				}
+			}else{
+				$type = 'attach';
+			}
 		}else{
-			$type = 'attach';
+				$type = 'attach';
 		}
 		return $type;
 	}
@@ -759,7 +787,7 @@ class QdDecode extends QdDecodeBase{
 }
 
 /**
- * QdPop ver 0.1.3a
+ * QdPop ver 0.1.4a
  * POP Receiver for PHP
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -771,8 +799,8 @@ class QdDecode extends QdDecodeBase{
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail_rec/
- * @version			0.1.3alafa
- * @lastmodified	2008-09-14
+ * @version			0.1.4alafa
+ * @lastmodified	2008-09-15
  * @license			The MIT License http://www.opensource.org/licenses/mit-license.php
  * 
  * Qdmail is sending e-mail library for multibyte language ,
