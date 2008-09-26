@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.2b
+ * Qdmail ver 1.1.3b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.2b
- * @lastmodified	2008-09-11
+ * @version			1.1.3b
+ * @lastmodified	2008-09-26
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -37,6 +37,7 @@ if ( defined('CAKE_CORE_INCLUDE_PATH') || defined('CAKE')) {
 	class QdmailBranch{
 	}
 }
+
 if( !function_exists( 'qd_send_mail' ) ){
 
 	function qd_send_mail( $type , $to = null, $subject = null , $content = null , $other_header = array() , $attach = null, $debug = 0 ){
@@ -50,7 +51,6 @@ if( !function_exists( 'qd_send_mail' ) ){
 		list( $type , $link ) = $mail->keyUpper($type);
 		$option = array();
 		$return = array();
-
 		$type = array_change_key_case( $type , CASE_UPPER ) ;
 		$option = (isset($type['OPTION']) && is_array($type['OPTION'])) ? $type['OPTION'] : array();			$return = (isset($type['RETURN']) && is_array($type['RETURN'])) ? $type['RETURN'] : array();
 		if(isset($type['SMTP'])){
@@ -59,10 +59,12 @@ if( !function_exists( 'qd_send_mail' ) ){
 		$type = isset($type['TYPE']) ? $type['TYPE']:'text';
 		$_type=array('TEXT'=>'Text','HTML'=>'Html','DECO'=>'Deco' ,'DECOTEMPLATE'=>'DecoTemplate');
 		$easy_method = isset($_type[strtoupper($type)]) ? 'easy'.$_type[strtoupper($type)]:'_';
+
 		if(!method_exists($mail,$easy_method)){
 			$mail -> errorGather('Illegal type \''.$type.'\'',__LINE__);
 			return false;
 		}
+
 		$ret = $mail->{$easy_method}( $to , $subject , $content , $other_header , $attach , $option );
 
 		foreach($return as $method => $value ){
@@ -88,14 +90,16 @@ class QdmailBase extends QdmailBranch{
 	//----------------------------
 	var	$lang_def			= "ja";
 	var	$encoding_def		= "utf-8";
-	var	$detect_def		= array('ASCII','JIS','UTF-8','EUC-JP','SJIS');
+	var	$detect_def			= array('ASCII','JIS','UTF-8','EUC-JP','SJIS');
 	var $mb_parameter_stack = null;
+	var $united_charset		= null;
 	//------------------------
 	// Time Zone , Message Id
 	//------------------------
 	var $time_zone			= null; // '+0900' in Japan
 	var $message_id			= true;
 	var $salt				= 'qdmail';
+	var $message_id_right	= null;
 	//----------------------------
 	// Line Feed Character & kana
 	//----------------------------
@@ -108,7 +112,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.2b';
+	var	$version		= '1.1.3b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -207,7 +211,7 @@ class QdmailBase extends QdmailBranch{
 	var $is_html		= null ;
 	var	$auto_both		= true ; // text & html
 	var	$inline_mode	= false;
-	var	$deco_kind		= null ;
+	var	$deco_kind		= null ; // number of $this->deco_def
 	var	$auto_deco_judge= false;
 	var $no_inline_attach_structure = 0;
 	var $deco_def_default = 0;
@@ -416,15 +420,15 @@ class QdmailBase extends QdmailBranch{
 			),
 	);
 	var	$deco_judge		= array(
-		'docomo.ne.jp'=>'DC',
-		'softbank.ne.jp'=>'SB',
-		'i.softbank.ne.jp'=>'SB',
-		'disney.ne.jp'=>'SB',
-		'vodafone.ne.jp'=>'SB',
-		'ezweb.ne.jp'=>'AU',
-		'emnet.ne.jp'=>'EM',
-		'pdx.ne.jp'=>'WL',
-		'gmail.com'=>'DC',
+		'docomo.ne.jp'		=> 'DC',
+		'softbank.ne.jp'	=> 'SB',
+		'i.softbank.ne.jp'	=> 'SB',
+		'disney.ne.jp'		=> 'SB',
+		'vodafone.ne.jp'	=> 'SB',
+		'ezweb.ne.jp'		=> 'AU',
+		'emnet.ne.jp'		=> 'EM',
+		'pdx.ne.jp'			=> 'WL',
+		'gmail.com'			=> 'DC',
 	);
 
 	//------------------
@@ -473,6 +477,15 @@ class QdmailBase extends QdmailBranch{
 	var	$attach_path	= null;
 	var	$auto_ext		= true ; // mimetypes
 	var $content_id_fix = false;
+	//------------------------
+	// Mailer
+	//-------------------------
+	var $mailer		= 'mail';
+	//------------------------
+	// Sendmail
+	//-------------------------
+	var $sendmail = false ;
+	var $sendmail_path = null;
 	//------------------------
 	// SMTP
 	//-------------------------
@@ -523,6 +536,7 @@ class QdmailBase extends QdmailBranch{
 	//------------------------
 	// etc
 	//------------------------
+	var $temporary_path		= null;
 	var $simple_attach		= false;
 	var $keep_parameter		= array(false);
 	var	$mta_option			= null ;
@@ -594,7 +608,7 @@ class QdmailBase extends QdmailBranch{
 			$this->detect_order = $param[1];
 		}
 		if( false !== $this->detect_order ){
-			mb_detect_order( $this->detect_order );
+			$this->qd_detect_order( $this->detect_order );
 		}
 		if( !empty( $param[3] ) ){
 			$this->error_display = $param[2];
@@ -604,6 +618,7 @@ class QdmailBase extends QdmailBranch{
 		}
 		$this->optionNameLink();
 		$this->wordwrapProhibitConstruct();
+		$this->sendmail_path = ini_get("sendmail_path");
 	}
 
 	function & getInstance(){
@@ -654,10 +669,10 @@ class QdmailBase extends QdmailBranch{
 		$this->body = null;
 		$this->after_id = null;
 		$this->content_id_fix = true;
-		$this->is_html = 'html';
+		$this->is_html = 'HTML';
 		$count = 0;
 
-		$content = mb_convert_encoding($content,'utf-8',mb_detect_encoding($content));
+		$content = $this->qd_convert_encoding($content,'utf-8',$this->qd_detect_encoding($content));
 		$content=preg_replace('/\r?\n/','',$content);
 
 		foreach($attach as $key => $att){
@@ -676,7 +691,9 @@ class QdmailBase extends QdmailBranch{
 
 
 		$this->html( $content , null , null , 'utf-8' );
-		$this->attach( $attach );
+		if( 0 >count($attach) ){
+			$this->attach( $attach );
+		}
 
 		$this->createMail(
 			$this->deco_def[$this->deco_kind]['BOUNDARY'],
@@ -750,7 +767,9 @@ class QdmailBase extends QdmailBranch{
 				$fromName =  $other_header[1];
 				unset($other_header[1]);
 			}
-			$other_header = array_merge( $other_header,array('FROM'=>array( $fromAddr , $fromName )));
+			if(!empty($fromAddr)){
+				$other_header = array_merge( $other_header,array('FROM'=>array( $fromAddr , $fromName )));
+			}
 		}
 
 		$other_header = array_merge(array('TO'=>$to),$other_header);
@@ -855,6 +874,7 @@ class QdmailBase extends QdmailBranch{
 		'wrap_prohibit_allow'=> 'bool' ,
 		'force_change_charset'	=> 'bool' ,
 		'error_display'		=> 'bool' ,
+		'sendmail'			=> 'bool' ,
 		'smtp'				=> 'bool' ,
 		'smtp_loglevel_link'=> 'bool' ,
 		'inline_mode'		=> 'bool' ,
@@ -887,6 +907,10 @@ class QdmailBase extends QdmailBranch{
 		'time_zone'			=> 'string' ,
 		'private_key_file'	=> 'string' ,
 		'certificate_pass'	=> 'string' ,
+		'message_id_right'	=> 'string' ,
+		'sendmail_path'		=> 'string' ,
+		'temporary_path'	=> 'string' ,
+		'united_charset'	=> 'string' ,
 		'mb_strwidth_magni'	=> 'numeric' ,
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
@@ -1006,6 +1030,9 @@ class QdmailBase extends QdmailBranch{
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function errorDisplay( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function sendmail( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function smtp( $bool = null ){
@@ -1210,10 +1237,19 @@ class QdmailBase extends QdmailBranch{
 	function timeZone( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
+	function messageIdRight( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
 	function mtaOption( $option = null ){
-		if(ini_get('safe_mode')){
-			return $this->errorGather('You can not specify mtaOption at SafeMode of PHP',__LINE__);
-		}
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function unitedCharset( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function sendmailPath( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
+	function temporaryPath( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
 	function logPath( $option = null ){
@@ -1245,6 +1281,39 @@ class QdmailBase extends QdmailBranch{
 	//------------------
 	function version(){
 		return $this->version;
+	}
+	//------------------
+	//mb_ wrapper
+	//------------------
+	function qd_detect_encoding( $word ){
+		if(!is_null($this->united_charset)){
+			return $this->united_charset;
+		}else{
+			return mb_detect_encoding( $word );
+		} 
+	}
+	function qd_convert_encoding( $word , $target_chrset , $org_charset = null ){
+
+		if(empty($org_charset)){
+			$org_charset = $this->qd_detect_encoding( $word );
+		}
+		if(empty($org_charset)){
+			return $word;
+		}
+		if( strtoupper( $target_chrset ) === strtoupper( $org_charset ) ){
+			return $word;
+		}
+		if('ASCII'===strtoupper( $target_chrset ) || 'ASCII'===strtoupper( $org_charset )){
+			return $word;
+		}
+		return mb_convert_encoding( $word , $target_chrset , $org_charset );
+	}
+	function qd_detect_order( $param=null ){
+		if(is_null($param)){
+			return mb_detect_order();
+		}else{
+			return mb_detect_order( $param );
+		}
 	}
 	//-----------------------------------------
 	// Address and Name Keys change Opiton
@@ -1282,7 +1351,7 @@ class QdmailBase extends QdmailBranch{
 	}
 	function strToArrayKey( $word , $value ){
 		$ret = array();
-		$enc = mb_detect_encoding( $word );
+		$enc = $this->qd_detect_encoding( $word );
 		$length = mb_strlen( $word , $enc );
 		for( $i=0 ; $i < $length ; $i++ ){
 			$ret[ mb_substr( $word , $i , 1 , $enc ) ] = $value;
@@ -1418,7 +1487,13 @@ class QdmailBase extends QdmailBranch{
 		}
 	return $this->errorGather() ;
 	}
-
+	function encoding( $enc = null ){
+		if(is_null($enc)){
+			return $this->corres_charset['TEXT'];
+		}
+		$this->corres_charset['TEXT'] = $this->corres_charset['HTML'] = $enc;
+		return true;
+	}
 	//--------------------------
 	// set Mutibye Parameter
 	//--------------------------
@@ -1427,12 +1502,12 @@ class QdmailBase extends QdmailBranch{
 		if(is_array($lang)){
 			mb_language( $lang[0] ) ;
 			mb_internal_encoding( $lang[1] ) ;
-			mb_detect_order( $lang[2] );
+			$this->qd_detect_order( $lang[2] );
 		}elseif( 'STACK'===strtoupper($lang) ){
-			$this->mb_parameter_stack = array(mb_language(),mb_internal_encoding(),mb_detect_order());
+			$this->mb_parameter_stack = array(mb_language(),mb_internal_encoding(),$this->qd_detect_order());
 			mb_language( $this->lang_def );
 			mb_internal_encoding( $this->encoding_def );
-			mb_detect_order( $this->detect_def );
+			$this->qd_detect_order( $this->detect_def );
 		}else{
 			if( !is_null( $lang ) ){
 				mb_language( $lang ) ;
@@ -1441,7 +1516,7 @@ class QdmailBase extends QdmailBranch{
 				mb_internal_encoding( $internal_enc ) ;
 			}
 			if( !is_null( $detect ) ){
-				mb_detect_order( $detect );
+				$this->qd_detect_order( $detect );
 			}
 		}
 	}
@@ -1556,7 +1631,7 @@ class QdmailBase extends QdmailBranch{
 	}
 	function replace( $cont , $rep ){
 		foreach($rep as $serch => $replace ){
-			if( '_' == mb_substr( $serch , 0 , 1 , mb_detect_encoding($serch) ) ){
+			if( '_' == mb_substr( $serch , 0 , 1 , $this->qd_detect_encoding($serch) ) ){
 				continue;
 			}
 			if( empty($replace) && !empty($this->replace_def[$serch]) ){
@@ -1568,10 +1643,12 @@ class QdmailBase extends QdmailBranch{
 		return $cont;
 	}
 	function qdmail_preg_replace( $reg , $rep , $cont ){
-		$enc = mb_detect_encoding( $cont );
-		$_reg = mb_convert_encoding( $reg , $this->qdmail_system_charset , mb_detect_encoding( $reg ) );		$_rep = mb_convert_encoding( $rep , $this->qdmail_system_charset , mb_detect_encoding( $rep ) );		$_cont = mb_convert_encoding( $cont , $this->qdmail_system_charset , $enc );
+		$enc = $this->qd_detect_encoding( $cont );
+		$_reg = $this->qd_convert_encoding( $reg , $this->qdmail_system_charset , $this->qd_detect_encoding( $reg ) );
+		$_rep = $this->qd_convert_encoding( $rep , $this->qdmail_system_charset , $this->qd_detect_encoding( $rep ) );
+		$_cont = $this->qd_convert_encoding( $cont , $this->qdmail_system_charset , $enc );
 		$cont = preg_replace( $_reg , $_rep , $_cont );
-		return mb_convert_encoding($cont , $enc , $this->qdmail_system_charset );
+		return $this->qd_convert_encoding($cont , $enc , $this->qdmail_system_charset );
 	}
 	//------------------------------------
 	// OOP User Interface (Recommended)
@@ -1739,13 +1816,6 @@ class QdmailBase extends QdmailBranch{
 	function html( $cont , $charset = null , $enc = null , $org_charset = null ){
 		return $this->body('html', $cont , null , $charset , $enc , $org_charset );
 	}
-/*
-	function both( $cont , $charset = null , $enc = null , $org_charset = null ){
-		$fg = $this->body('text', isset($cont['TEXT']) ? $cont['TEXT']:array_shift($cont), $length , $charset , $enc , $org_charset );
-		return $fg && $this->body('html', isset($cont['HTML']) ? $cont['HTML']:array_shift($cont) , null , $charset , $enc , $org_charset );
-	}
-*/
-
 	//--------------------------
 	// assist User Interface
 	//--------------------------
@@ -1894,11 +1964,28 @@ class QdmailBase extends QdmailBranch{
 	function headerDefault(){
 		$this->header['MIME-Version'] = '1.0';
 		$this->header['X-'.$this->xmailer] = 'version-'.$this->version . ' ' . $this->license .' http://hal456.net/qdmail';
-		$sendby = $this->smtp ? 'SMTP':'mailfunction';
+
+		if($this->smtp){
+			$sendby = 'SMTP';
+		}elseif($this->sendmail && !ini_get('SafeMode')){
+			$sendby = 'Sendmail';
+		}elseif($this->sendmail && ini_get('SafeMode')){
+			$sendby = 'MailFunction but Sendmail if no Safemode';
+		}else{
+			$sendby = 'MailFunction';
+		}
 		$this->header['X-'.$this->xmailer] .= $this->LFC.' send-by '.$sendby;
 	}
 	function makeMessageId(){
-		$id = 'Qdmail.' . $this->version . sha1(microtime().$this->salt.mt_rand()).'@hal456.net';
+		$req_uri = empty($_SERVER['REQUEST_URI']) ? '':$_SERVER['REQUEST_URI'];
+		if(is_null($this->message_id_right)){
+			$right = 'hal456.net';
+		}else{
+			$right = $this->message_id_right;
+		}
+		$id = 'Qdmail.' . $this->version 
+				. '_' . sha1( microtime() . $this->salt . mt_rand() . $req_uri )
+				. '@' . $right ;
 		return '<'.$id.'>';
 	}
 	
@@ -1944,6 +2031,10 @@ class QdmailBase extends QdmailBranch{
 						}
 					}
 					$this->to( $to , null , false );
+
+
+$this->debugEchoLf($this->to);
+
 					if( $this->auto_deco_judge ){
 						$this->deco_kind = $this->decoJudge( $this->to[0] );
 					}
@@ -2007,17 +2098,18 @@ class QdmailBase extends QdmailBranch{
 		if( isset($option) && !empty($option) ){
 			list( $option , $void ) = $this->keyUpper( $option );
 		}
-
 		// for smtp
 		$this->extractReceipt() ;
 		$fg = true;
 		$fg_debug = ( 2 > $this->debug ) && !$this->render_mode;
 		if( $fg_debug && (  ( 0 === count( $this->error ) ) && ( 0 === count( $this->error_stack ) ) ) || $this->ignore_error ) {
 			//
-			//  mail or SMTP(FUTURE)
+			//  mail or SMTP or sendmail
 			//
 			if( $this->smtp ){
 				$fg = $this->sendBySmtp();
+			}elseif( $this->sendmail &&  !ini_get('safe_mode') ){
+				$fg = $this->sendBySendmail();
 			}elseif( ini_get('safe_mode') ){
 				$fg = mail( 
 					  trim( $this->header_for_mailfunction_to )
@@ -2026,6 +2118,7 @@ class QdmailBase extends QdmailBranch{
 					, trim( $this->header_for_mailfunction_other )
 				);
 			}else{
+
 				$fg = mail( 
 					  trim( $this->header_for_mailfunction_to )
 					, trim( $this->header_for_mailfunction_subject )
@@ -2033,13 +2126,17 @@ class QdmailBase extends QdmailBranch{
 					, trim( $this->header_for_mailfunction_other )
 					, trim( $this->mta_option )
 				);
+
 			}
 
 			if( $fg ){
 				$this->done = array_merge( $this->done , $this->to , $this->cc , $this->bcc ) ;
 			}else{
 				$this->undone = array_merge( $this->undone , $this->to , $this->cc , $this->bcc ) ;
+
 				$err_mes = $this->smtp ? 'SMTP mail method':'PHP mail function';
+				$err_mes = $this->sendmail ? 'sendmail of localhost':$err_mes;
+
 				$fg =$this->errorGather('No send . Because '.$err_mes.' replied error' ,__LINE__);
 			}
 		}elseif( $fg_debug ){
@@ -2250,7 +2347,7 @@ class QdmailBase extends QdmailBranch{
 				continue;
 			}
 			foreach( $this->{strtolower($section)} as $one ){
-				$mime=$this->mime_string(
+				$mime=$this->mimeEncode(
 					$one[$this->tokey['_NAME']],
 					isset($one['_CHARSET']) ? $one['_CHARSET'] : $this->charset_header,
 					isset($one['_ORG_CHARSET']) ? $one['_ORG_CHARSET'] : null
@@ -2273,13 +2370,13 @@ class QdmailBase extends QdmailBranch{
 			}else{
 				$subj = $this->subject['CONTENT'] ;
 			}
-			$header['Subject']=$this->mime_string(
+			$header['Subject']=$this->mimeEncode(
 				$subj ,
 				isset($this->subject['_CHARSET']) ? $this->subject['_CHARSET']:$this->charset_header,
 				isset($this->subject['_ORG_CHARSET']) ? $this->subject['_ORG_CHARSET'] : null
 			);
 		}
-	$this->header = array_merge( $this->other_header , $header ) ;
+	$this->header = array_merge( $header , $this->other_header ) ;
 	}
 	function renderHeader(){
 		if(isset($this->header['To'])){
@@ -2295,6 +2392,8 @@ class QdmailBase extends QdmailBranch{
 		$header_for_smtp = array();
 		$this->header_for_smtp_bcc = null;
 
+		$header_for_smtp['To'] = $this->header_for_mailfunction_to;
+		$header_for_smtp['Subject'] = $this->header_for_mailfunction_subject;
 		foreach( $this->header as $key => $value ){
 			if( is_array( $value ) ){
 				$add = implode( ',' . $this->LFC . ' ' , $value );
@@ -2309,8 +2408,6 @@ class QdmailBase extends QdmailBranch{
 			$this->header_for_mailfunction_other .= $key . ': ' . $add . $this->LFC;
 			unset( $this->header[$key] );
 		}
-		$header_for_smtp['To'] = $this->header_for_mailfunction_to;
-		$header_for_smtp['Subject'] = $this->header_for_mailfunction_subject;
 
 		$this->header_for_smtp = '';
 
@@ -2342,15 +2439,11 @@ class QdmailBase extends QdmailBranch{
 		if(empty($cont)){
 			return false;
 		}
-		$enc = mb_detect_encoding($cont);
-		if('UTF-8'!==strtoupper($enc)){
-			$cont = mb_convert_encoding($cont,'utf-8',$enc);
-		}
+		$enc = $this->qd_detect_encoding($cont);
+		$cont = $this->qd_convert_encoding($cont,'UTF-8',$enc);
 		$name = $filename;
-		$enc = mb_detect_encoding($name);
-		if('UTF-8'!==strtoupper($enc)){
-			$name = mb_convert_encoding($filename,'utf-8',$enc);
-		}
+		$enc = $this->qd_detect_encoding($name);
+		$name = $this->qd_convert_encoding($filename,'utf-8',$enc);
 		if( 0 < preg_match('/"cid:'.$name.'"/is' , $cont ) ){
 			return true;
 		}else{
@@ -2542,9 +2635,7 @@ class QdmailBase extends QdmailBranch{
 			$content = mb_convert_kana( $content , 'KV' , $org_char );
 		}
 
-		if( $org_char != $target_char ){
-			$content = mb_convert_encoding( $content , $target_char , $org_char );
-		}
+		$content = $this->qd_convert_encoding( $content , $target_char , $org_char );
 		if( 'BASE64' == $enc_upp && !empty( $content ) ){
 			$content = chunk_split( base64_encode( $content ) );
 		}elseif( ( 'QUOTED-PRINTABLE' == $enc_upp || 'QP' == $enc_upp ) && !empty( $content ) ){
@@ -2567,16 +2658,16 @@ class QdmailBase extends QdmailBranch{
 		return trim(strip_tags($_content));
 	}
 
-	function mime_string( $subject , $charset , $org_charset = null  ) {
+	function mimeEncode( $subject , $charset , $org_charset = null  ) {
 
-		$enc = isset($org_charset) ? $org_charset:mb_detect_encoding($subject);
+		$enc = isset($org_charset) ? $org_charset:$this->qd_detect_encoding($subject);
 		if( empty($subject) || ( strlen(bin2hex($subject))/2 == mb_strlen($subject,$enc) ) ){
 			return trim(chunk_split($subject, 75, "\r\n "));
 		}
 		if($this->kana && 'ja'===$this->language){
 			$subject = mb_convert_kana( $subject , 'KV' , $enc );
 		}
-		$subject = mb_convert_encoding( $subject , $charset , $enc );
+		$subject = $this->qd_convert_encoding( $subject , $charset , $enc );
 		$start = "=?" . $charset . "?B?";
 		$end = "?=";
 		$spacer = $end . $this->LFC . ' ' . $start;
@@ -2603,27 +2694,6 @@ class QdmailBase extends QdmailBranch{
 		return $ret ;
 	}
 
-	function _mime_addr( $addr , $add_addr = true ){
-		$formed_addr = $this->extractAddr( $addr );
-		if( empty( $formed_addr ) ){
-			return false;
-		}
-		$addr = trim($addr);
-		$addr = str_replace(array('<','>'),'',$addr);
-		$temp=strpos($addr,$formed_addr);
-		if(empty($temp)){
-			return $formed_addr;
-		}
-		$for_mime = substr( $addr , 0 , strpos( $addr , $formed_addr ));
-
-		$ret = $this->mime_string( $for_mime , $this->charset_header );
-		if( $add_addr ){
-			return $ret . ' <' . $formed_addr . '>' ;
-		}else{
-			return $ret;
-		}
-	}
-
 	function extractAddr($addr_including_sclub){
 		if( preg_match( '/([^<>\s]*@[^<>\s]+)/' , $addr_including_sclub , $match ) == 0){
 			return $this->errorGather('Illegal Mail Address "'.$addr_including_sclub.'"' ,__LINE__) ;
@@ -2642,30 +2712,6 @@ class QdmailBase extends QdmailBranch{
 			return $this->errorGather('User function area error' ,__LINE__) ;
 		}
 	}
-
-	function makeAddrLine( $one , $hdn ){
-		if( is_array($one) ){
-##			$one = array_change_key_case( $one , CASE_UPPER );
-			if( !empty($one[$this->tokey['_NAME']]) && !empty( $one[$this->tokey['_ADDR']] ) ){
-				if(isset($one['_CHARSET'])){
-					$charset = $one['_CHARSET'];
-				}else{
-					$charset = $this->charset_header;
-				}
-				$ret = $this->mime_string( $one[$this->tokey['_NAME']] , $charset ) . ' <' . $this->extractAddr($one[$this->tokey['_ADDR']]) . '>';
-			}elseif( !empty( $one[$this->tokey['_ADDR']] ) ){
-				$ret = $this->_mime_addr( $one[$this->tokey['_ADDR']] );
-			}else{
-				$this->error[]="Data nothing Error in '" . $hdn . "' Header line->".__LINE__;
-				$ret = false;
-			}
-			
-		}else{
-			$ret = $this->_mime_addr( $one );
-		}
-		return $ret;
-	}
-
 	//----------------------------------------------------------------
 	// Charset ReDecear - if Decoration Pattern needs anather charset
 	//  (Overload)
@@ -2715,12 +2761,12 @@ class QdmailBase extends QdmailBranch{
 		if( is_array( $array ) && !empty( $array['_ORG_CHARSET'] ) ){
 			foreach($array as $key => $value){
 				if( false === strpos( $key , '_CHARSET' ) ){
-					$array[$key] = mb_convert_encoding($value , $target_enc ,$array['_ORG_CHARSET']  );
+					$array[$key] = $this->qd_convert_encoding($value , $target_enc ,$array['_ORG_CHARSET']  );
 				}
 			}
 		}elseif( is_string( $array ) || is_numeric( $array ) ){
-			$enc = mb_detect_encoding( $array );
-			$array = mb_convert_encoding($array , $target_enc , $enc );
+			$enc = $this->qd_detect_encoding( $array );
+			$array = $this->qd_convert_encoding($array , $target_enc , $enc );
 		}elseif( is_array( $array ) ){
 			foreach( $array as $key => $value ){
 				$ret[$key] = $this->convertCharsetRecursive( $value , $target_enc );
@@ -2896,7 +2942,7 @@ class QdmailBase extends QdmailBranch{
 			$org_charset = null;
 		}
 
-		$filename = $this->mime_string( $one['NAME'] , $charset , $org_charset );
+		$filename = $this->mimeEncode( $one['NAME'] , $charset , $org_charset );
 
 		//is Inline ?
 		if( $inline ){
@@ -3026,7 +3072,7 @@ class QdmailBase extends QdmailBranch{
 				}
 			}
 		}
-		$enc = mb_detect_encoding( $line );
+		$enc = $this->qd_detect_encoding( $line );
 		$len = mb_strlen( $line , $enc );
 		if ( ( $len <= $length )  || $skip ) {
 			return $line;
@@ -3151,7 +3197,7 @@ class QdmailBase extends QdmailBranch{
 	}
 
 	function clean( $content ){
-		if($this->smtp){
+		if($this->smtp ){
 			$LFC = $this->LFC;
 		}else{
 			$LFC = "\n";
@@ -3320,6 +3366,7 @@ class QdmailBase extends QdmailBranch{
 		'ai'=>'application/postscript',
 		'zip'=>'application/zip',
 		'lzh'=>'application/x-lzh',
+		'lha'=>'application/octet-stream',
 		'tar'=>'application/x-tar',
 		'gzip'=>'application/x-tar',
 		'cpt'=>'application/mac-compactpro',
@@ -3359,6 +3406,16 @@ class QdmailBase extends QdmailBranch{
 		'khm'=>'application/x-kddi-htmlmail',// au decoration mail template
 		'dmt'=>'application/x-decomail-template',// nttdocomo decoration mail template
 		'hmt'=>'application/x-htmlmail-template',// softbank decoration mail template
+		'hqx'=>'application/mac-binhex40',
+		'cpt'=>'application/mac-compactpro',
+		'php'=>'application/x-httpd-php',
+		'php4'=>'application/x-httpd-php',
+		'php3'=>'application/x-httpd-php',
+		'phtml'=>'application/x-httpd-php',
+		'phps'=>'application/x-httpd-php-source',
+		'js'=>'application/x-javascript',
+		'swf'=>'application/x-shockwave-flash',
+		'eml'=>'message/rfc822',
 	);
 
 	//-------------------------------
@@ -3417,9 +3474,9 @@ class QdmailBase extends QdmailBranch{
 		}
 		foreach($vars as $var){
 			$_out = print_r( $var , true ) ;
-			$enc = mb_detect_encoding( $_out );
+			$enc = $this->qd_detect_encoding( $_out );
 			if( ( strtoupper( $this->qdmail_system_charset ) !== strtoupper( $enc ) ) && ('ASCII'!==strtoupper( $enc ))){
-				$_out = mb_convert_encoding( $_out , $this->qdmail_system_charset , $enc );
+				$_out = $this->qd_convert_encoding( $_out , $this->qdmail_system_charset , $enc );
 			}
 			$out .=  $_out  . $this->LFC;
 		}
@@ -3432,7 +3489,7 @@ class QdmailBase extends QdmailBranch{
 		echo "<pre>";
 		$out = $this->name . ' Debug: ' . $spacer . trim( $out );
 		$out = htmlspecialchars( $out , ENT_QUOTES ,  $this->qdmail_system_charset);
-		$out = mb_convert_encoding($out,$this->debug_echo_charset,$this->qdmail_system_charset);
+		$out = $this->qd_convert_encoding($out,$this->debug_echo_charset,$this->qdmail_system_charset);
 		echo $out;
 		echo "</pre>";
 
@@ -3521,6 +3578,28 @@ EOF;
 		$this->smtp_object -> data( $this->content_all_for_smtp );
 		return $this -> smtp_object -> send();
 	}
+
+	function sendBySendmail(){
+		$temp = tmpfile();
+		fputs($temp,$this->content_all_for_smtp);
+		$temp_name = tempnam ( $this->temporary_path , 'qdmail' );
+		if(false===$temp_name){
+			return $this->errorGather('Can not make Temporary File ',__LINE__);
+		}
+		$fp = fopen($temp_name,'w');
+		if(false===$temp_name){
+			return $this->errorGather('Can not open Temporary File ',__LINE__);
+		}
+		fputs($fp,$this->content_all_for_smtp);
+		fclose($fp);
+		$sendfg = exec($this->sendmail_path . ' '.$this->mtaOption().' < '.$temp_name,$ret);
+		$fg = unlink($temp_name);
+		if(false===$temp_name){
+			return $this->errorGather('Can not dellete Temporary File ',__LINE__);
+		}
+		return (false!==$sendfg && empty($sendfg)) || true === $sendfg;
+
+	}
 	//------------------------------------------
 	// expecting Override on the other FrameWork
 	//------------------------------------------
@@ -3565,12 +3644,12 @@ class QdmailUserFunc extends QdmailBase{
 
 	function stripCrlf( $word ){
 		if( $this->force_change_charset ){
-			$enc = mb_detect_encoding( $word ) ;
-			$word = mb_convert_encoding( $word , $this->qdmail_system_charset , $enc );
+			$enc = $this->qd_detect_encoding( $word ) ;
+			$word = $this->qd_convert_encoding( $word , $this->qdmail_system_charset , $enc );
 		}
 		$word = preg_replace( '/\r?\n/i' , '' , $word );
 		if( $this->force_change_charset ){
-			$word = mb_convert_encoding( $word , $enc , $this->qdmail_system_charset );
+			$word = $this->qd_convert_encoding( $word , $enc , $this->qdmail_system_charset );
 		}
 		return $word ;
 	}
@@ -3594,6 +3673,7 @@ class Qdmail extends QdmailUserFunc{
 //-------------------------------------------
 class QdmailComponent extends QdmailUserFunc{
 
+	var $framework	= 'CakePHP';
 	var $view_dir	= 'email';
 	var $layout_dir	= 'email';
 	var $layout		= 'default';
@@ -3689,11 +3769,9 @@ class QdmailComponent extends QdmailUserFunc{
 		$mess .= $view->renderLayout( $content ) ;
 
 		if( is_null( $org_charset ) ){
-			$org_charset = mb_detect_encoding( $mess );
+			$org_charset = $this->qd_detect_encoding( $mess );
 		}
-		if( $org_charset !== $target_charset ){
-			$mess = mb_convert_encoding( $mess , $target_charset , $org_charset );
-		}
+		$mess = $this->qd_convert_encoding( $mess , $target_charset , $org_charset );
 		return array( $mess , $target_charset , $org_charset );
 	}
 	function CakePHP( $param ){
@@ -3706,6 +3784,208 @@ class QdmailComponent extends QdmailUserFunc{
 		}
 		return $this->{$type}( isset($content) ?  $content:null, isset($template) ?  $template:null , isset($layout) ?  $layout:null , isset($org_charset) ?  $org_charset: null , isset($target_charset) ? $target_charset:null , isset($enc) ?  $enc:null , isset($wordwrap_length) ? $wordwrap_length:null );
 	}
+}
+//-------------------------------------------
+// Symfony Addon
+//-------------------------------------------
+class sfQdmail extends QdmailUserFunc{
+
+	var $framework = 'Symfony';
+
+	function __construct( $param = null ){
+		if( !is_null($param)){
+			$param = func_get_args();
+		}
+		parent::__construct( $param );
+	}
+
+	function setBody( $body ){
+		if('HTML'===$this->is_html){
+			$this->html( $body );
+		}else{
+			$this->text( $body );
+		}
+	}
+	function getAltBody(){
+
+		if('HTML'===$this->is_html){
+			$content=$this->body();
+			return !empty($content['TEXT']['CONTENT']);
+		}else{
+			return false;
+		}
+	}
+	function setAltBody( $body ){
+		$this->text( $body );
+	}
+	function addStringAttachment($data, $attach_name , $mime_type){
+		$this->attachDirect( $attach_name , $data , $add = true , $mime_type );
+	}
+	function getRawHeader(){
+		return $this->header_for_smtp;
+	}
+	function getRawBody(){
+		return $this->$this->content_for_mailfunction;
+	}
+
+	function initialize(){
+		$this->reset();
+	}
+	function setCharset($charset){
+    	$this->charset($charset);
+	}
+	function getCharset(){
+ 	   $ret = $this->charset();
+		return $ret['TEXT'];
+	}
+	function setContentType($content_type){
+		if(false===strpos(strtoupper($content_type),'HTML')){
+			$this->is_html = 'TEXT';
+		}else{
+			$this->is_html = 'HTML';
+		}
+	}
+	function getContentType(){
+		if('HTML'===$this->is_html){
+			return 'text/html';
+		}else{
+			return 'text/plain';
+		}
+	}
+	function setPriority($priority){
+		$pri = array(1=>'high',3=>'normal',5=>'low');
+		if(isset($pri[$priority])){
+			$this->priority($pri[$priority]);
+			return true;
+		}else{
+			return false;
+		}
+	}
+	function getPriority(){
+		$pri = array('HIGH'=>1,'NORMAL'=>3,'LOW'=>5);
+		$now_priority = strtoupper($this->priority());
+		if(empty($now_priority)){
+			return null;
+		}
+		return $pri[$now_priority];
+	}
+	function setEncoding($encoding){
+		$this->encoding($encoding);
+	}
+	function getEncoding(){
+		return $this->encoding();
+	}
+	function setSubject($subject){
+		$this->subject($subject);
+	}
+	function getSubject(){
+		return $this->subject();
+	}
+	function getBody(){
+		$content=$this->body();
+		if('HTML'===$this->is_html){
+			return $content['HTML']['CONTENT'];
+		}else{
+			return $content['TEXT']['CONTENT'];
+		}
+	}
+	function setMailer($type = 'mail', $options = array()){
+	switch ($type){
+	case 'smtp':
+		$this->smtp = true;
+		$this->sendmail = false;
+		$this->mailer = 'smtp';
+		if (isset($options['keep_alive'])){
+			 $this->keepParameter(true);
+		}
+        break;
+      case 'sendmail':
+			$this->sendmail = true;
+			$this->smtp = false;
+			$this->mailer = 'sendmail';
+        break;
+      default:
+    		$this->smtp = false;
+    		$this->sendmail = false;
+			$this->mailer = 'mail';
+        break;
+	  	}
+	}
+	function getMailer(){
+		return $this->mailer;
+	}
+	function setSender($address, $name = null){
+		$this->addHeader( 'Return-Path' , $address );
+	}
+	function getSender(){
+		return isset($this->other_header['Return-Path']) ? $this->other_header['Return-Path']:null;
+	}
+	function setFrom($address, $name = null){
+		$this->from( $address , $name );
+	}
+	function addAddresses($addresses){
+		$this->to( $addresses , null , true );
+	}
+	function addAddress($address, $name = null){
+		$this->to( $address , $name , true );
+	}
+	function addCc($address, $name = null){
+		$this->cc( $address , $name , true );
+	}
+	function addBcc($address, $name = null){
+		$this->cc( $address , $name , true );
+	}
+	function addReplyTo($address, $name = null){
+		$this->replyto( $address , $name , true );
+	}
+	function clearAddresses(){
+		$this->to =array();
+	}
+	function clearCcs(){
+		$this->cc =array();
+	}
+	function clearBccs(){
+		$this->bcc =array();
+	}
+	function clearReplyTos(){
+		$this->replyto =array();
+	}
+	function clearAllRecipients(){
+		$this->clearAddresses();
+		$this->clearCcs();
+		$this->clearBccs();
+		$this->clearReplyTos();
+	}
+	function addAttachment($path, $name = '', $encoding = 'base64', $type = 'application/octet-stream'){
+		return $this->attach(array('PATH'=>$path,'NAME'=>$name,'MIME-TYPE'=>$type),true);
+	}
+	function addEmbeddedImage($path, $cid, $name = '', $encoding = 'base64', $type = 'application/octet-stream'){
+		return $this->attach(array('PATH'=>$path,'NAME'=>$name,'MIME-TYPE'=>$type,'CONTENT-ID'=>$cid),true);
+	}
+	function setAttachments($attachments){}
+	function clearAttachments(){
+		$this->attach=array();
+	}
+	function addCustomHeader($name, $value){
+		$this->addHeader($name, $value);
+	}
+	function clearCustomHeaders(){
+		$this->other_header=array();
+	}
+	function prepare(){}
+	function smtpClose(){}
+	function setDomain($hostname){}
+	function getDomain(){}
+	function setHostname($hostname){}
+	function getHostname(){}
+	function setPort($port){}
+	function getPort(){}
+	function setUsername($username){}
+	function getUsername(){}
+	function setPassword($password){}
+	function getPassword(){}
+	function setWordWrap($wordWrap){}
+	function getWordWrap(){}
 }
 
 class QdDeco{
