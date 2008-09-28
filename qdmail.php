@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.3b
+ * Qdmail ver 1.1.4b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.3b
- * @lastmodified	2008-09-26
+ * @version			1.1.4b
+ * @lastmodified	2008-09-27
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -93,6 +93,7 @@ class QdmailBase extends QdmailBranch{
 	var	$detect_def			= array('ASCII','JIS','UTF-8','EUC-JP','SJIS');
 	var $mb_parameter_stack = null;
 	var $united_charset		= null;
+	var $mime_encode_max	= 75;
 	//------------------------
 	// Time Zone , Message Id
 	//------------------------
@@ -112,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.3b';
+	var	$version		= '1.1.4b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -915,6 +916,7 @@ class QdmailBase extends QdmailBranch{
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
 		'errorlog_level'	=> 'numeric' ,
+		'mime_encode_max'	=> 'numeric' ,
 		'smtp_server'			=> 'array' ,
 	);
 	var	$method_property	= array();
@@ -1273,6 +1275,9 @@ class QdmailBase extends QdmailBranch{
 	function errorlogLevel( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__, 0 , $this->errorlog_level_max );
 	}
+	function mimeEncodeMax( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
 	function smtpServer( $array = null ){
 		return $this->option( array( __FUNCTION__ => $array ) ,__LINE__, true , true );
 	}
@@ -1289,7 +1294,7 @@ class QdmailBase extends QdmailBranch{
 		if(!is_null($this->united_charset)){
 			return $this->united_charset;
 		}else{
-			return mb_detect_encoding( $word );
+			return mb_detect_encoding( $word , mb_detect_order() , true );
 		} 
 	}
 	function qd_convert_encoding( $word , $target_chrset , $org_charset = null ){
@@ -1963,8 +1968,10 @@ class QdmailBase extends QdmailBranch{
 	//-------------------------------------------
 	function headerDefault(){
 		$this->header['MIME-Version'] = '1.0';
-		$this->header['X-'.$this->xmailer] = 'version-'.$this->version . ' ' . $this->license .' http://hal456.net/qdmail';
-
+		if($this->debug > 0 ){
+			$this->header['X-QdmailDebug'] = trim(chunk_split ( base64_encode($this->iniGather()) , $this->mime_encode_max ,  $this->LFC."\t" ));
+		}
+		$this->header['X-'.$this->xmailer] = 'version-'.$this->version . ' ' . $this->license .' http://hal456.net/qdmail PHPver '.PHP_VERSION;
 		if($this->smtp){
 			$sendby = 'SMTP';
 		}elseif($this->sendmail && !ini_get('SafeMode')){
@@ -2662,7 +2669,7 @@ $this->debugEchoLf($this->to);
 
 		$enc = isset($org_charset) ? $org_charset:$this->qd_detect_encoding($subject);
 		if( empty($subject) || ( strlen(bin2hex($subject))/2 == mb_strlen($subject,$enc) ) ){
-			return trim(chunk_split($subject, 75, "\r\n "));
+			return trim(chunk_split($subject, $this->mime_encode_max, "\r\n "));
 		}
 		if($this->kana && 'ja'===$this->language){
 			$subject = mb_convert_kana( $subject , 'KV' , $enc );
@@ -2672,7 +2679,7 @@ $this->debugEchoLf($this->to);
 		$end = "?=";
 		$spacer = $end . $this->LFC . ' ' . $start;
 
-		$length = 75 - strlen($start) - strlen($end);
+		$length = $this->mime_encode_max - strlen($start) - strlen($end);
 
 		$pointer = 1;
 		$cut_start = 0;
