@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.6a
+ * Qdsmtp ver 0.1.8a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.6a
- * @lastmodified	2008-09-03
+ * @version			0.1.8a
+ * @lastmodified	2008-09-30
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -239,7 +239,6 @@ class QdsmtpBase extends QdsmtpError{
 	function addto( $recip ){
 		return $this->addRecipient( $recip );
 	}
-
 	function done( $stack = false ){
 		if( $stack ){
 			return $this->rcpt_stack;
