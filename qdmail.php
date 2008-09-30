@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.4b
+ * Qdmail ver 1.1.5b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.4b
- * @lastmodified	2008-09-27
+ * @version			1.1.5b
+ * @lastmodified	2008-09-30
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -113,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.4b';
+	var	$version		= '1.1.5b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -442,7 +442,7 @@ class QdmailBase extends QdmailBranch{
 	var	$done			= array()	;
 	var	$undone			= array()	;
 	var	$replyto		= array()	;
-	var	$receipt		= array()	;
+	var	$recipient		= array()	;
 	var	$allways_bcc	= null ;
 	var	$header			= array()	;
 	var	$other_header	= array()	;
@@ -2026,7 +2026,7 @@ class QdmailBase extends QdmailBranch{
 			$this->cc( false ) ;
 			$this->bcc( false ) ;
 			if( empty( $tos ) ){
-				$fg = $this->errorGather('Receipt Header is not exsit line' ,__LINE__) ;
+				$fg = $this->errorGather('recipient Header is not exsit line' ,__LINE__) ;
 			}else{
 				// To Separate mode
 				foreach($tos as $key => $to){
@@ -2105,8 +2105,8 @@ $this->debugEchoLf($this->to);
 		if( isset($option) && !empty($option) ){
 			list( $option , $void ) = $this->keyUpper( $option );
 		}
-		// for smtp
-		$this->extractReceipt() ;
+		// for smtp and sendmail
+		$this->extractrecipient() ;
 		$fg = true;
 		$fg_debug = ( 2 > $this->debug ) && !$this->render_mode;
 		if( $fg_debug && (  ( 0 === count( $this->error ) ) && ( 0 === count( $this->error_stack ) ) ) || $this->ignore_error ) {
@@ -2357,7 +2357,8 @@ $this->debugEchoLf($this->to);
 				$mime=$this->mimeEncode(
 					$one[$this->tokey['_NAME']],
 					isset($one['_CHARSET']) ? $one['_CHARSET'] : $this->charset_header,
-					isset($one['_ORG_CHARSET']) ? $one['_ORG_CHARSET'] : null
+					isset($one['_ORG_CHARSET']) ? $one['_ORG_CHARSET'] : null,
+					strlen($section)+2
 				);
 				// bcc header is not allowed MimeName
 				if( empty( $mime ) || 'BCC'===strtoupper( $section ) ){
@@ -2380,7 +2381,8 @@ $this->debugEchoLf($this->to);
 			$header['Subject']=$this->mimeEncode(
 				$subj ,
 				isset($this->subject['_CHARSET']) ? $this->subject['_CHARSET']:$this->charset_header,
-				isset($this->subject['_ORG_CHARSET']) ? $this->subject['_ORG_CHARSET'] : null
+				isset($this->subject['_ORG_CHARSET']) ? $this->subject['_ORG_CHARSET'] : null,
+				9 //strlen(subject)+2
 			);
 		}
 	$this->header = array_merge( $header , $this->other_header ) ;
@@ -2665,7 +2667,7 @@ $this->debugEchoLf($this->to);
 		return trim(strip_tags($_content));
 	}
 
-	function mimeEncode( $subject , $charset , $org_charset = null  ) {
+	function mimeEncode( $subject , $charset , $org_charset = null , $first_line_front_words_length = 12 ) {
 
 		$enc = isset($org_charset) ? $org_charset:$this->qd_detect_encoding($subject);
 		if( empty($subject) || ( strlen(bin2hex($subject))/2 == mb_strlen($subject,$enc) ) ){
@@ -2689,7 +2691,7 @@ $this->debugEchoLf($this->to);
 		while( $pointer <= $max ){
 			$line  = mb_substr( $subject , $cut_start , $pointer-$cut_start , $charset );
 			$bs64len = strlen(bin2hex(base64_encode($line)))/2;
-			if( $bs64len <= $length ){
+			if( (0!==count($_ret) && $bs64len <= $length) || (0===count($_ret) && $bs64len <= ($length-$first_line_front_words_length)) ){
 				$pointer ++;
 			}else{
 				$_ret[] = base64_encode($line) ;
@@ -2698,6 +2700,7 @@ $this->debugEchoLf($this->to);
 		}
 		$_ret[] = base64_encode( $line );
 		$ret = $start . implode( $spacer , $_ret ) . $end;
+		$ret = preg_replace(array('/\0/is','/\r[^\n]/is'),'',$ret);
 		return $ret ;
 	}
 
@@ -2786,7 +2789,7 @@ $this->debugEchoLf($this->to);
 		}
 		return $array ;
 	}
-	function extractReceipt(){
+	function extractrecipient(){
 		$hd = array('to','cc','bcc') ;
 		$ret = array();
 		foreach( $hd as $hdn ){
@@ -2795,9 +2798,9 @@ $this->debugEchoLf($this->to);
 			}
 		}
 		if( 0 === count( $ret ) ){
-			return $this->errorGather('No Receipt' ,__LINE__) ;
+			return $this->errorGather('No recipient' ,__LINE__) ;
 		}else{
-			$this->receipt = $ret ;
+			$this->recipient = $ret ;
 			return $this->errorGather();
 		}
 	}
@@ -2949,7 +2952,7 @@ $this->debugEchoLf($this->to);
 			$org_charset = null;
 		}
 
-		$filename = $this->mimeEncode( $one['NAME'] , $charset , $org_charset );
+		$filename = $this->mimeEncode( $one['NAME'] , $charset , $org_charset , 20 );
 
 		//is Inline ?
 		if( $inline ){
@@ -3581,14 +3584,13 @@ EOF;
 			$this->smtp_object -> logLevel( $this->log_level );
 			$this->smtp_object -> errorlogLevel( $this->errorlog_level );
 		}
-		$this->smtp_object -> to( $this->receipt );
+		$this->smtp_object -> to( $this->recipient );
 		$this->smtp_object -> data( $this->content_all_for_smtp );
 		return $this -> smtp_object -> send();
 	}
 
 	function sendBySendmail(){
-		$temp = tmpfile();
-		fputs($temp,$this->content_all_for_smtp);
+
 		$temp_name = tempnam ( $this->temporary_path , 'qdmail' );
 		if(false===$temp_name){
 			return $this->errorGather('Can not make Temporary File ',__LINE__);
@@ -3599,9 +3601,10 @@ EOF;
 		}
 		fputs($fp,$this->content_all_for_smtp);
 		fclose($fp);
-		$sendfg = exec($this->sendmail_path . ' '.$this->mtaOption().' < '.$temp_name,$ret);
+		$recipient = implode(' ',$this->recipient);
+		$sendfg = exec($this->sendmail_path . ' '.$this->mtaOption().' '.$recipient.' < '.$temp_name,$ret);
 		$fg = unlink($temp_name);
-		if(false===$temp_name){
+		if(false===$fg){
 			return $this->errorGather('Can not dellete Temporary File ',__LINE__);
 		}
 		return (false!==$sendfg && empty($sendfg)) || true === $sendfg;
