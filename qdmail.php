@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.5b
+ * Qdmail ver 1.1.6b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.5b
- * @lastmodified	2008-09-30
+ * @version			1.1.6b
+ * @lastmodified	2008-10-01
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -113,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.5b';
+	var	$version		= '1.1.6b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -3759,7 +3759,7 @@ class QdmailComponent extends QdmailUserFunc{
 	function cakeRender( $content , $type , $org_charset = null , $target_charset = null){
 
 		if( is_null( $target_charset ) ){
-			$target_charset = $this->qdmail_system_charset;
+			$target_charset = $this->charset_content;
 		}
 		if( !class_exists ( $this->Controller->view ) ){
 			if( !$this->import( 'View' , $this->view ) ){
