@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.6b
+ * Qdmail ver 1.1.7b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.6b
+ * @version			1.1.7b
  * @lastmodified	2008-10-01
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
@@ -113,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.6b';
+	var	$version		= '1.1.7b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -2023,8 +2023,8 @@ class QdmailBase extends QdmailBranch{
 		if( true === $this->toSeparate() ){
 			$stack_tos = array( $this->to , $this->cc , $this->bcc );
 			$tos = $this->to ;
-			$this->cc( false ) ;
-			$this->bcc( false ) ;
+#			$this->cc( false ) ;
+#			$this->bcc( false ) ;
 			if( empty( $tos ) ){
 				$fg = $this->errorGather('recipient Header is not exsit line' ,__LINE__) ;
 			}else{
