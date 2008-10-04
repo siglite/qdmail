@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.7b
+ * Qdmail ver 1.1.8b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.7b
- * @lastmodified	2008-10-01
+ * @version			1.1.8b
+ * @lastmodified	2008-10-04
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -113,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.7b';
+	var	$version		= '1.1.8b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -140,6 +140,8 @@ class QdmailBase extends QdmailBranch{
 	//--------------------------
 	// for address 
 	//--------------------------
+	var $varidate_address_regex	= '/[^@]+@[^@]+/';
+	var $allow_blank_header		= false;
 	var	$addr_many = array(
 		'TO'	=> true,
 		'CC'	=> true,
@@ -542,7 +544,7 @@ class QdmailBase extends QdmailBranch{
 	var $keep_parameter		= array(false);
 	var	$mta_option			= null ;
 	var	$is_create			= false;
-	var	$validate_addr  	= array('this','validateAddr');
+	var	$address_validation_method  = array('this','validateAddr');
 	var	$boundary_base_degit= 2 ;
 	var	$stack_construct	= null ;
 	var $start_time			= null;
@@ -888,6 +890,7 @@ class QdmailBase extends QdmailBranch{
 		'pgp'				=> 'bool' ,
 		'simple_attach'		=> 'bool' ,
 		'message_id'		=> 'bool' ,
+		'allow_blank_header'=> 'bool' ,
 		'sign'				=> 'string' ,
 		'keep_parameter'	=> 'array' ,
 		'attach_path'		=> 'string' ,
@@ -912,12 +915,14 @@ class QdmailBase extends QdmailBranch{
 		'sendmail_path'		=> 'string' ,
 		'temporary_path'	=> 'string' ,
 		'united_charset'	=> 'string' ,
+		'varidate_address_regex'=> 'string' ,
 		'mb_strwidth_magni'	=> 'numeric' ,
 		'log_dateformat'	=> 'numeric' ,
 		'log_level'			=> 'numeric' ,
 		'errorlog_level'	=> 'numeric' ,
 		'mime_encode_max'	=> 'numeric' ,
 		'smtp_server'			=> 'array' ,
+		'address_validation_method'=> 'array',
 	);
 	var	$method_property	= array();
 
@@ -1068,6 +1073,9 @@ class QdmailBase extends QdmailBranch{
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function messageId( $bool = null ){
+		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
+	}
+	function allowBlankHeader( $bool = null ){
 		return $this->option( array( __FUNCTION__ => $bool ) ,__LINE__);
 	}
 	function smime( $bool = null ){
@@ -1248,6 +1256,9 @@ class QdmailBase extends QdmailBranch{
 	function unitedCharset( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
+	function varidateAddressRegex( $option = null ){
+		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
+	}
 	function sendmailPath( $option = null ){
 		return $this->option( array( __FUNCTION__ => $option ) ,__LINE__);
 	}
@@ -1280,6 +1291,9 @@ class QdmailBase extends QdmailBranch{
 	}
 	function smtpServer( $array = null ){
 		return $this->option( array( __FUNCTION__ => $array ) ,__LINE__, true , true );
+	}
+	function addressValidationMethod( $array = null ){
+		return $this->option( array( __FUNCTION__ => $array ) ,__LINE__, false , true );
 	}
 	//------------------
 	//version
@@ -1839,6 +1853,10 @@ class QdmailBase extends QdmailBranch{
 		}
 		$addr = $this->analyzeAddr( $addr , $name );
 
+		if( !$this->allow_blank_header && empty($addr[0][$this->tokey['_ADDR']]) ){// if addres is empty , no set
+			return true;
+		}
+
 		if( !$add ){
 			$this->{$section} = $addr;
 		}else{
@@ -1863,11 +1881,7 @@ class QdmailBase extends QdmailBranch{
 		if( empty( $name ) || !is_array( $name ) ){
 			if(isset($addr[$this->tokey['_ADDR']])){
 				$addr[$this->tokey['_NAME']] = isset($addr[$this->tokey['_NAME']]) ? $addr[$this->tokey['_NAME']]:null;
-				if( !empty($addr) ){
-					return array( $addr );//ver 0.7.3a
-				}else{
-					return array();
-				}
+			return array( $addr );//ver 0.7.3a
 			}elseif( isset( $addr[0] ) && is_array( $addr[0] ) ){
 				foreach($addr as $ad){
 ##					list( $ad , $void ) = $this->keyUpper( $ad );
@@ -2705,21 +2719,25 @@ $this->debugEchoLf($this->to);
 	}
 
 	function extractAddr($addr_including_sclub){
-		if( preg_match( '/([^<>\s]*@[^<>\s]+)/' , $addr_including_sclub , $match ) == 0){
-			return $this->errorGather('Illegal Mail Address "'.$addr_including_sclub.'"' ,__LINE__) ;
+		if( preg_match( '/<[^>]+>/' , $addr_including_sclub , $match ) == 0){
+			$addr = $addr_including_sclub;
+		}else{
+			$addr = $match[1];
 		}
 
-		$temp = $this->validate_addr;
+		$temp = $this->address_validation_method;
 		if( is_array( $temp ) && 'this'==$temp[0]){
-			$fg = $this->{$temp[1]}($match[1]);
+			$fg = $this->{$temp[1]}( $addr );
+			$mess ="System";
 		}elseif( !empty( $temp ) ){
-			$fg = call_user_func( array($temp[0],$temp[1]) , $match[1]);
+			$fg = call_user_func( array($temp[0],$temp[1]) , $addr );
+			$mess ="USER";
 		}
 
 		if( $fg ){
-			return $match[1];
+			return  $addr ;
 		}else{
-			return $this->errorGather('User function area error' ,__LINE__) ;
+			return $this->errorGather('Illegal Mail Address'.$mess.'Validete Address Method' ,__LINE__) ;
 		}
 	}
 	//----------------------------------------------------------------
@@ -3647,9 +3665,11 @@ class QdmailUserFunc extends QdmailBase{
 	}
 
 	function validateAddr( $addr ){
-		// validate mail-addrress routine
-		// if error then $this->error[]='error message';
-		return true;
+		if(0==preg_match( $this->varidate_address_regex , $addr , $match )){
+			$this->errorGather('Tyr Varidate Error by regex preg_match(\''.$this->varidate_address_regex . '\')',__LINE__);
+		}else{
+			return true;
+		}
 	}
 
 	function stripCrlf( $word ){
