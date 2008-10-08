@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.8b
+ * Qdmail ver 1.1.9b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.8b
- * @lastmodified	2008-10-04
+ * @version			1.1.9b
+ * @lastmodified	2008-10-09
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -104,7 +104,7 @@ class QdmailBase extends QdmailBranch{
 	//----------------------------
 	// Line Feed Character & kana
 	//----------------------------
-	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change "\n"
+	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change to "\n"
 	var $LFC_Qmail			= "\n";
 	var $language			= 'ja';
 	var $kana				=  false; // kana header
@@ -113,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.8b';
+	var	$version		= '1.1.9b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -3666,7 +3666,7 @@ class QdmailUserFunc extends QdmailBase{
 
 	function validateAddr( $addr ){
 		if(0==preg_match( $this->varidate_address_regex , $addr , $match )){
-			$this->errorGather('Tyr Varidate Error by regex preg_match(\''.$this->varidate_address_regex . '\')',__LINE__);
+			$this->errorGather('Tyr Varidate Error by regex preg_match(\''.$this->varidate_address_regex . '\') the address is ->'.$addr,__LINE__);
 		}else{
 			return true;
 		}
