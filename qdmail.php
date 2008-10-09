@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.1.9b
+ * Qdmail ver 1.2.0b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.1.9b
- * @lastmodified	2008-10-09
+ * @version			1.2.0b
+ * @lastmodified	2008-10-10
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -113,7 +113,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.1.9b';
+	var	$version		= '1.2.0b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -2719,7 +2719,7 @@ $this->debugEchoLf($this->to);
 	}
 
 	function extractAddr($addr_including_sclub){
-		if( preg_match( '/<[^>]+>/' , $addr_including_sclub , $match ) == 0){
+		if( preg_match( '/<([^>]+)>/' , $addr_including_sclub , $match ) == 0){
 			$addr = $addr_including_sclub;
 		}else{
 			$addr = $match[1];
