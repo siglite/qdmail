@@ -14,7 +14,3 @@ Qdsmtp
   http://sourceforge.jp/projects/opensource/wiki/licenses%2FMIT_license
 
 このライセンスを守るのが難しい場合は、作者に連絡をとってください。
-
-■参考
-  CakePHPと同じライセンスです。
-

@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.8a
+ * Qdsmtp ver 0.1.9a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.8a
- * @lastmodified	2008-09-30
+ * @version			0.1.9a
+ * @lastmodified	2008-10-11
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -39,6 +39,7 @@ class QdsmtpError extends QdsmtpBranch{
 	var $log_filename		='qdsmtp.log';
 	var $errorlog_filename	='qdsmtp_error.log';
 	var $log_dateformat		= 'Y-m-d H:i:s';
+	var $error_ignore		= false;
 
 	function errorRender( $error = null , $lf = null , $display = true ){
 		if( is_null( $error ) ){
@@ -63,13 +64,15 @@ class QdsmtpError extends QdsmtpBranch{
 
 	function errorGather( $message = null , $line = null){
 
-		if( !is_null( $message ) ){
+		if( !is_null( $message ) && !$this->error_ignore){
 			if( !is_null( $line ) ){
 				$message .= ' line -> '.$line;
 			}
 			$this->error[] = $message ;
 		}elseif( 0 === count( $this->error ) ){
 			return true;
+		}elseif( $this->error_ignore ){
+			return false;
 		}
 
 		$er = $this->errorRender();
@@ -625,10 +628,11 @@ class QdsmtpBase extends QdsmtpError{
 	function tryUntilSuccess( $items ){
 		$try = false;
 		$err_mes = array();
-
 		foreach( $items as $item ){
 			$err_mes[] = $item[0];
+			$this->error_ignore = true;
 			list( $st , $mes , $com ) = $this->communicate( array( $item ) );
+			$this->error_ignore = false;
 			if( true === $st ){
 				$try = true;
 				$this->error = array();
