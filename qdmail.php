@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.2.0b
+ * Qdmail ver 1.2.1b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.2.0b
- * @lastmodified	2008-10-10
+ * @version			1.2.1b
+ * @lastmodified	2008-10-19
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -104,8 +104,9 @@ class QdmailBase extends QdmailBranch{
 	//----------------------------
 	// Line Feed Character & kana
 	//----------------------------
-	var	$LFC				= "\r\n";// Notice: CRLF ,If you failed, change to "\n"
-	var $LFC_Qmail			= "\n";
+	var	$LFC				=  "\r\n";// Notice: CRLF ,If you failed, change to "\n"
+	var $LFC_Qmail			=  null;
+	var $is_qmail			=  null;
 	var $language			= 'ja';
 	var $kana				=  false; // kana header
 	//----------
@@ -113,7 +114,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.2.0b';
+	var	$version		= '1.2.1b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -616,7 +617,16 @@ class QdmailBase extends QdmailBranch{
 		if( !empty( $param[3] ) ){
 			$this->error_display = $param[2];
 		}
-		if($this->is_qmail()){
+
+		if(is_null($this->LFC)){
+			$this->LFC = chr(13) . chr(10);
+		}
+
+		if(is_null($this->LFC_Qmail)){
+			$this->LFC_Qmail = chr(10);
+		}
+
+		if($this->isQmail()){
 			$this->LFC = $this->LFC_Qmail;
 		}
 		$this->optionNameLink();
@@ -1162,9 +1172,27 @@ class QdmailBase extends QdmailBranch{
 		}
 		return  $this->content_for_mailfunction ;
 	}
-	function is_qmail(){
+	function isQmail(){
+		if(!is_null($this->is_qmail)){
+			return $this->is_qmail;
+		}
+		$this->is_qmail = false;
 		$ret = ini_get ( 'sendmail_path' );
-		return false!==strpos($ret,'qmail');
+		if(false !== strpos($ret,'qmail')){
+			$this->is_qmail = true;
+		}
+		$sendmail_path = ini_get('sendmail_path');
+		if(false !== @system($sendmail_path.' -d0.1 < /dev/null > /dev/null',$ret)){
+			if(is_array($ret)){
+				$ret = reset($ret);
+			}
+			$code = (int) substr($ret,0,3);
+			if( 100 === $code || 111 === $code){
+				$this->is_qmail = true;
+			}
+		}
+
+		return $this->is_qmail ;
 	}
 	function lineFeed( $LFC = null ){
 		if(is_null($LFC)){
@@ -1985,7 +2013,7 @@ class QdmailBase extends QdmailBranch{
 		if($this->debug > 0 ){
 			$this->header['X-QdmailDebug'] = trim(chunk_split ( base64_encode($this->iniGather()) , $this->mime_encode_max ,  $this->LFC."\t" ));
 		}
-		$this->header['X-'.$this->xmailer] = 'version-'.$this->version . ' ' . $this->license .' http://hal456.net/qdmail PHPver '.PHP_VERSION;
+		$this->header['X-'.$this->xmailer] = trim('version-'.$this->version . ' ' . $this->license .' http://hal456.net/qdmail PHPver '.PHP_VERSION);
 		if($this->smtp){
 			$sendby = 'SMTP';
 		}elseif($this->sendmail && !ini_get('SafeMode')){
@@ -1995,7 +2023,7 @@ class QdmailBase extends QdmailBranch{
 		}else{
 			$sendby = 'MailFunction';
 		}
-		$this->header['X-'.$this->xmailer] .= $this->LFC.' send-by '.$sendby;
+		$this->header['X-'.$this->xmailer] .= $this->LFC . chr(9) . 'send-by '.$sendby;
 	}
 	function makeMessageId(){
 		$req_uri = empty($_SERVER['REQUEST_URI']) ? '':$_SERVER['REQUEST_URI'];
@@ -2419,7 +2447,7 @@ $this->debugEchoLf($this->to);
 		$header_for_smtp['Subject'] = $this->header_for_mailfunction_subject;
 		foreach( $this->header as $key => $value ){
 			if( is_array( $value ) ){
-				$add = implode( ',' . $this->LFC . ' ' , $value );
+				$add = implode( ',' . $this->LFC . chr(9) , $value );
 			}else{
 				$add = $value;
 			}
@@ -2693,7 +2721,7 @@ $this->debugEchoLf($this->to);
 		$subject = $this->qd_convert_encoding( $subject , $charset , $enc );
 		$start = "=?" . $charset . "?B?";
 		$end = "?=";
-		$spacer = $end . $this->LFC . ' ' . $start;
+		$spacer = $end . $this->LFC . chr(9) . $start;
 
 		$length = $this->mime_encode_max - strlen($start) - strlen($end);
 
@@ -3228,7 +3256,7 @@ $this->debugEchoLf($this->to);
 		if($this->smtp ){
 			$LFC = $this->LFC;
 		}else{
-			$LFC = "\n";
+			$LFC = chr(10);
 		}
 		return array(rtrim( preg_replace( '/\r?\n/' , $LFC , $content ) ),$LFC);
 	}
