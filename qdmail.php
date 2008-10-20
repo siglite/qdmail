@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.2.1b
+ * Qdmail ver 1.2.2b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.2.1b
- * @lastmodified	2008-10-19
+ * @version			1.2.2b
+ * @lastmodified	2008-10-20
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -114,7 +114,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.2.1b';
+	var	$version		= '1.2.2b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -693,7 +693,6 @@ class QdmailBase extends QdmailBranch{
 				continue;
 			}
 
-
 			$aft = isset($this->deco_def[$this->deco_kind]['CID_AFTER']) ? $this->deco_def[$this->deco_kind]['CID_AFTER']:'';
 			$new_cid =  $this->deco_def[$this->deco_kind]['CID_PREFIX'] 
 				. substr('00'.$count++,0,$this->deco_def[$this->deco_kind]['CID_NUM_COL'])
@@ -704,7 +703,7 @@ class QdmailBase extends QdmailBranch{
 
 
 		$this->html( $content , null , null , 'utf-8' );
-		if( 0 >count($attach) ){
+		if( 0 < count($attach) ){
 			$this->attach( $attach );
 		}
 
