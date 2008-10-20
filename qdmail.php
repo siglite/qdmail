@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.2.3b
+ * Qdmail ver 1.2.4b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.2.3b
+ * @version			1.2.4b
  * @lastmodified	2008-10-21
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
@@ -114,7 +114,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.2.3b';
+	var	$version		= '1.2.4b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -4090,6 +4090,9 @@ class QdDeco{
 		foreach($attach as $att){
 			if(isset($att['content-id'])){
 				$cid = rtrim($att['content-id'],'>');
+				$cid = ltrim($cid,'<');
+			}elseif(isset($att['content_id'])){
+				$cid = rtrim($att['content_id'],'>');
 				$cid = ltrim($cid,'<');
 			}else{
 				$cid = null;
