@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.2.2b
+ * Qdmail ver 1.2.3b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.2.2b
- * @lastmodified	2008-10-20
+ * @version			1.2.3b
+ * @lastmodified	2008-10-21
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -114,7 +114,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.2.2b';
+	var	$version		= '1.2.3b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -700,13 +700,10 @@ class QdmailBase extends QdmailBranch{
 			$content=preg_replace('/<\s*IMG\s+SRC\s*=\s*"cid:'.$attach[$key]['CONTENT-ID'].'"/is','<IMG SRC="cid:'.$new_cid.'"',$content);
 			$attach[$key]['CONTENT-ID'] = $new_cid;
 		}
-
-
 		$this->html( $content , null , null , 'utf-8' );
 		if( 0 < count($attach) ){
 			$this->attach( $attach );
 		}
-
 		$this->createMail(
 			$this->deco_def[$this->deco_kind]['BOUNDARY'],
 			true
@@ -2507,7 +2504,6 @@ $this->debugEchoLf($this->to);
 			$boundary = $this->makeBoundary();
 		}
 		$ret_boundary = $boundary ;
-
 		foreach($this->attach as $key => $att){
 			if($this->isInlineImage(basename($this->attach[$key]['PATH'])) && empty($this->attach[$key]['CONTENT-ID'])){
 				$this->attach[$key]['CONTENT-ID'] = basename($this->attach[$key]['PATH']);
@@ -4092,8 +4088,8 @@ class QdDeco{
 		}
 		$attach = $receiver->attach();
 		foreach($attach as $att){
-			if(isset($att['content_id'])){
-				$cid = rtrim($att['content_id'],'>');
+			if(isset($att['content-id'])){
+				$cid = rtrim($att['content-id'],'>');
 				$cid = ltrim($cid,'<');
 			}else{
 				$cid = null;
