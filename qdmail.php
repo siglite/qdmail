@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.2.4b
+ * Qdmail ver 1.2.5b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,7 +12,7 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.2.4b
+ * @version			1.2.5b
  * @lastmodified	2008-10-21
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
@@ -114,7 +114,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.2.4b';
+	var	$version		= '1.2.5b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -694,8 +694,13 @@ class QdmailBase extends QdmailBranch{
 			}
 
 			$aft = isset($this->deco_def[$this->deco_kind]['CID_AFTER']) ? $this->deco_def[$this->deco_kind]['CID_AFTER']:'';
-			$new_cid =  $this->deco_def[$this->deco_kind]['CID_PREFIX'] 
-				. substr('00'.$count++,0,$this->deco_def[$this->deco_kind]['CID_NUM_COL'])
+			$prefix = isset($this->deco_def[$this->deco_kind]['CID_PREFIX']) ? $this->deco_def[$this->deco_kind]['CID_PREFIX']:'';
+			$col_num = isset($this->deco_def[$this->deco_kind]['CID_NUM_COL']) ? $this->deco_def[$this->deco_kind]['CID_NUM_COL']:3;
+			$ct = '00'.$count++;
+			$start  = (strlen($ct)-$col_num) < 0 ? 0:strlen($ct)-$col_num;
+			$end = strlen($ct)-$start;
+			$new_cid =  $prefix 
+				. substr($ct,$start,$end)
 				. $aft;
 			$content=preg_replace('/<\s*IMG\s+SRC\s*=\s*"cid:'.$attach[$key]['CONTENT-ID'].'"/is','<IMG SRC="cid:'.$new_cid.'"',$content);
 			$attach[$key]['CONTENT-ID'] = $new_cid;
