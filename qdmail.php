@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdmail ver 1.2.5b
+ * Qdmail ver 1.2.6b
  * E-Mail for multibyte charset
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdmail/
- * @version			1.2.5b
- * @lastmodified	2008-10-21
+ * @version			1.2.6b
+ * @lastmodified	2008-10-23
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdmail is sending e-mail library for multibyte language ,
@@ -114,7 +114,7 @@ class QdmailBase extends QdmailBranch{
 	//----------
 	var $kana_content_relation =  false;
 	var	$name			= 'Qdmail';
-	var	$version		= '1.2.5b';
+	var	$version		= '1.2.6b';
 	var	$xmailer		= 'PHP-Qdmail';
 	var $license 		= 'The_MIT_License';
 	//--------------------
@@ -2740,7 +2740,9 @@ $this->debugEchoLf($this->to);
 				$cut_start = $pointer;
 			}
 		}
-		$_ret[] = base64_encode( $line );
+		if( strlen( trim( $line ) ) > 0){
+			$_ret[] = base64_encode( $line );
+		}
 		$ret = $start . implode( $spacer , $_ret ) . $end;
 		$ret = preg_replace(array('/\0/is','/\r[^\n]/is'),'',$ret);
 		return $ret ;
