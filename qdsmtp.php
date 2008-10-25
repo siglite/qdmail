@@ -1,6 +1,6 @@
 <?php
 /**
- * Qdsmtp ver 0.1.9a
+ * Qdsmtp ver 0.2.0a
  * SMTP Talker
  *
  * PHP versions 4 and 5 (PHP4.3 upper)
@@ -12,8 +12,8 @@
  *
  * @copyright		Copyright 2008, Spok.
  * @link			http://hal456.net/qdsmtp/
- * @version			0.1.9a
- * @lastmodified	2008-10-11
+ * @version			0.2.0a
+ * @lastmodified	2008-10-25
  * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
  * 
  * Qdsmtp is SMTP Taler library ,easy , quickly , usefull .
@@ -311,7 +311,6 @@ class QdsmtpBase extends QdsmtpError{
 			return false;
 		}
 	}
-
 	//------------------------------------------
 	// Sending Method
 	//------------------------------------------
@@ -474,8 +473,15 @@ class QdsmtpBase extends QdsmtpError{
 	}
 	function sendData(){
 		$reci = array();
+
+		if( '<' == substr( $this->smtp_param['FROM'],0,1) ){
+			$from = 'FROM:' . $this->smtp_param['FROM'];
+		}else{
+			$from = 'FROM:<' . $this->smtp_param['FROM'] . '>';
+		}
+
 		$items = array(
-				array( 'MAIL' , 'FROM:<' . $this->smtp_param['FROM'] . '>' ),
+				array( 'MAIL' ,  $from ),
 			);
 		list( $st , $mes , $com ) = $this->communicate($items);
 		if( !$st ){
@@ -484,7 +490,7 @@ class QdsmtpBase extends QdsmtpError{
 		$this->rcpt = array();
 		$notify = $this->always_notify_success ? ' NOTIFY=SUCCESS,FAILURE':'';
 		foreach( $this->recipient as $recipi ){
-			$items = array(array( 'RCPT' , 'TO:<' . $recipi . '>' . $notify ));
+			$items = array(array( 'RCPT' , 'TO:<' . $recipi . '>'  . $notify ));
 			list( $st , $mes , $com ) = $this->communicate($items);
 			if( !$st ){
 				$this->rcpt_undone[] = $recipi ;
