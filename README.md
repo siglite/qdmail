@@ -1,6 +1,8 @@
-# Qdmail: Multibyte mail library
+# Qdmail - PHP::Mail Library, Quick and Detailed for Multibyte
 
-## Original
+Qdmail series archives.
+
+## Origin
 
 * [Qdmail](http://hal456.net/qdmail/)
   * [QdSimpleMail](http://hal456.net/qd_simple_mail/)
@@ -9,7 +11,7 @@
 
 ## License
 
-MIT License
+MIT
 
 ## Copyright
 
