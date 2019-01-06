@@ -24,7 +24,7 @@ if( !function_exists( 'qd_simple_mail' ) ){
 
 	function qd_simple_mail( $toaddr , $toname , $subject , $content , $fromaddr = null , $fromname = null  , $additional = array() , $option = array() ,$mta_option = null){
 
-		$mail = & new QdSimpleMail();
+		$mail = new QdSimpleMail();
 		$mail -> to($toaddr , $toname);
 		$mail -> from($fromaddr , $fromname);
 		foreach($additional as $header_name => $value){

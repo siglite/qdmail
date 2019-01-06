@@ -1309,7 +1309,7 @@ class QdmailReceiver extends QdmailReceiverError{
 	function & getInstance( $class_name , $param = null){
 		$version = (float) PHP_VERSION ;
 		if( 5 > $version ){
-			$obj = & new $class_name($param);
+			$obj =  new $class_name($param);
 		}else{
 			$obj =  new $class_name($param);
 		}
