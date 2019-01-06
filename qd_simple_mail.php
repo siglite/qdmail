@@ -3,8 +3,6 @@
  * QdSimpleMail ver 0.1.0a
  * E-Mail for multibyte charset
  *
- * PHP versions 4 and 5 (PHP4.3 upper)
- *
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/simple_qdmail    :  http://hal456.net/simple_qdmail/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
@@ -67,7 +65,7 @@ class QdSimpleMail{
 	// debug
 	var $debug = 0;
 
-	function QdSimpleMail(){
+	function __construct(){
 		$this->LFC = $this->isQmail() ? $this->LFC_Qmail:$this->LFC;
 	}
 	function isQmail(){

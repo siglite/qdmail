@@ -3,8 +3,6 @@
  * Qdmail ver 1.2.6b
  * E-Mail for multibyte charset
  *
- * PHP versions 4 and 5 (PHP4.3 upper)
- *
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail    :  http://hal456.net/qdmail/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
@@ -3720,7 +3718,7 @@ class Qdmail extends QdmailUserFunc{
 
 	var $name ='Qdmail';
 
-	function Qdmail( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
@@ -3740,7 +3738,7 @@ class QdmailComponent extends QdmailUserFunc{
 	var $template	= 'default';
 	var $view		= null;
 
-	function QdmailComponent( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
