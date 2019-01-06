@@ -853,11 +853,11 @@ var $smtp_status= array(
 }
 
 class Qdsmtp extends QdsmtpBase{
-	function Qdsmtp( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
-		parent::QdsmtpBase( $param );
+		parent::__construct( $param );
 	}
 }
 //-------------------------------------------
@@ -871,11 +871,11 @@ class QdsmtpComponent extends QdsmtpBase{
 	var $template	= 'default';
 	var $view		= null;
 
-	function QdsmtpComponent( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
-		parent::QdsmtpBase( $param );
+		parent::__construct( $param );
 	}
 
 	function startup(&$controller) {
