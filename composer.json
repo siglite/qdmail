@@ -5,6 +5,10 @@
     "license": "MIT",
     "authors": [
         {
+            "name": "spok",
+            "email": "spok@bg.mbn.or.jp"
+        },
+        {
             "name": "Shun Ishihara",
             "email": "sig@siglite.net"
         }
