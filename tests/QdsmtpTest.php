@@ -9,6 +9,6 @@ class QdsmtpTest extends TestCase
     {
         $instance = new Qdsmtp();
 
-        # Todo: Implement debug function.
+        // Todo: Implement debug function.
     }
 }

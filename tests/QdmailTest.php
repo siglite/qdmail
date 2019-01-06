@@ -10,15 +10,15 @@ class QdmailTest extends TestCase
         $mail = new Qdmail();
         $mail->debug = 2;
 
-        # Todo: Implement new debug function.
-        #       (QdmailBase#debugEcho() include environment-dependent strings)
+        // Todo: Implement new debug function.
+        //       (QdmailBase#debugEcho() include environment-dependent strings)
 
-        #$this->expectOutputString("");
-        #$mail->easyText(
-        #    array("to@example.com"),
-        #    "A subject",
-        #    "body",
-        #    array("from@example.com")
-        #);
+        //$this->expectOutputString("");
+        //$mail->easyText(
+        //    array("to@example.com"),
+        //    "A subject",
+        //    "body",
+        //    array("from@example.com")
+        //);
     }
 }

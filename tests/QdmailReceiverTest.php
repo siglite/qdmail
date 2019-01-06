@@ -9,6 +9,6 @@ class QdmailReceiverTest extends TestCase
     {
         $instance = new QdPop();
 
-        # Todo: Implement new debug function.
+        // Todo: Implement new debug function.
     }
 }
