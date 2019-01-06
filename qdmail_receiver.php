@@ -3,8 +3,6 @@
  * QdmailReceiver including QdmailDecoder & QdPop
  * E-Mail for multibyte charset
  *
- * PHP versions 4 and 5 (PHP4.3 upper)
- *
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail    :  http://hal456.net/qdmail_rec/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
@@ -242,9 +240,6 @@ class QdDecodeBase extends QdmailReceiverError{
 	// Constructor 
 	//--------------
 	function __construct( $param = null ){
-		$this->QdDecodeBase( $param );
-	}
-	function QdDecodeBase( $param = null ){
 
 		$enc = mb_internal_encoding();
 		if( !empty( $enc ) ){
@@ -778,7 +773,7 @@ class QdDecode extends QdDecodeBase{
 
 	var $name ='QdDecode';
 
-	function QdDecode( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null( $param ) ){
 			$param = func_get_args();
 		}
@@ -789,8 +784,6 @@ class QdDecode extends QdDecodeBase{
 /**
  * QdPop ver 0.1.4a
  * POP Receiver for PHP
- *
- * PHP versions 4 and 5 (PHP4.3 upper)
  *
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail_decode : http://hal456.net/qdmail_rec/
@@ -831,10 +824,7 @@ class QdPopBase extends QdDecodeBase{
 	//--------------------------
 	// Constructor
 	//--------------------------
-	function __construct( $param = null ){
-		$this->QdPopBase($param);
-	}
-	function QdPopBase( $server ){
+	function __construct( $server = null ){
 		if( isset( $server[0] ) ){
 			$this->server = array_merge( $this->server , $server[0] );
 		}
@@ -1207,7 +1197,7 @@ class QdPop extends QdPopBase{
 
 	var $name			= 'QdPop';
 
-	function QdPop( $param = null ){
+	function __construct( $param = null ){
 		parent::__construct( $param );
 	}
 
@@ -1218,9 +1208,6 @@ class QdDecodeStdin extends QdDecodeBase{
 	var $name			= 'QdDecodeStdin';
 
 	function __construct( $param = null ){
-		$this->QdDecodeStdin($param);
-	}
-	function QdDecodeStdin( $param = null ){
 		parent::__construct( $param );
 	}
 
@@ -1248,9 +1235,6 @@ class QdDecodeDirect extends QdDecodeBase{
 	var $name			= 'QdDecodeDirect';
 
 	function __construct( $param = null ){
-		$this->QdDecodeDirect($param);
-	}
-	function QdDecodeDirect( $param = null ){
 		if( !empty( $param[0] ) ){
 			$this->set($param[0]);
 		}
@@ -1309,7 +1293,7 @@ class QdmailReceiver extends QdmailReceiverError{
 	function & getInstance( $class_name , $param = null){
 		$version = (float) PHP_VERSION ;
 		if( 5 > $version ){
-			$obj = & new $class_name($param);
+			$obj =  new $class_name($param);
 		}else{
 			$obj =  new $class_name($param);
 		}

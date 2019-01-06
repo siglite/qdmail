@@ -3,8 +3,6 @@
  * Qdmail ver 1.2.6b
  * E-Mail for multibyte charset
  *
- * PHP versions 4 and 5 (PHP4.3 upper)
- *
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail    :  http://hal456.net/qdmail/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
@@ -658,7 +656,7 @@ class QdmailBase extends QdmailBranch{
 
 			return $instance[0];
 		}
-		$instance[0] = & new Qdmail();
+		$instance[0] = new Qdmail();
 		return  $instance[0];
 	}
 	//--------------------------
@@ -3674,7 +3672,7 @@ EOF;
 		}elseif( !class_exists ( 'Qdsmtp' ) && !file_exists( 'qdsmtp.php' )){
 			return $this->errorGather('Plese load SMTP Program - Qdsmtp http://hal456.net/qdsmtp',__LINE__);
 		}
-		$this->smtp_object = & new Qdsmtp();
+		$this->smtp_object = new Qdsmtp();
 		return $this->smtp_object;
 	}
 	function setSmtpObject( & $obj ){
@@ -3720,7 +3718,7 @@ class Qdmail extends QdmailUserFunc{
 
 	var $name ='Qdmail';
 
-	function Qdmail( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
@@ -3740,7 +3738,7 @@ class QdmailComponent extends QdmailUserFunc{
 	var $template	= 'default';
 	var $view		= null;
 
-	function QdmailComponent( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
@@ -3758,7 +3756,7 @@ class QdmailComponent extends QdmailUserFunc{
 	//----------------------------
 	// Override Parent Method
 	//----------------------------
-	function & smtpObject(){
+	function & smtpObject( $null = false ){
 		if( isset( $this->Qdsmtp ) && is_object( $this->Qdsmtp ) ){
 			return $this->Qdsmtp;
 		}
@@ -3768,7 +3766,7 @@ class QdmailComponent extends QdmailUserFunc{
 				return $this->errorGather('Qdmail<->CakePHP Component Load Error , the name is Qdsmtp',__LINE__);
 			}
 		}
-		$this->Qdsmtp = & new QdsmtpComponent();
+		$this->Qdsmtp = new QdsmtpComponent();
 		if( !is_object( $this->Qdsmtp ) ){
 				return $this->errorGather('Qdmail<->CakePHP Component making Instance Error , the name is QdsmtpComponent',__LINE__);
 		}
@@ -3817,7 +3815,7 @@ class QdmailComponent extends QdmailUserFunc{
 			}
 		}
 		$type = strtolower( $type );
-		$view = & new $this->Controller->view( $this->Controller , false );
+		$view = new $this->Controller->view( $this->Controller , false );
 		$view->layout = $this->layout;
 		$mess = null;
 		$content = $view->renderElement( $this->view_dir . DS . $type . DS . $this->template , array('content' => $content ) , true );

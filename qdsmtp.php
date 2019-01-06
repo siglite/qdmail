@@ -3,8 +3,6 @@
  * Qdsmtp ver 0.2.0a
  * SMTP Talker
  *
- * PHP versions 4 and 5 (PHP4.3 upper)
- *
  * Copyright 2008, Spok in japan , tokyo
  * hal456.net/qdmail    :  http://hal456.net/qdsmtp/
  * & CPA-LAB/Technical  :  http://www.cpa-lab.com/tech/
@@ -179,7 +177,7 @@ class QdsmtpBase extends QdsmtpError{
 	var $time_out			= 3 ;
 	var $always_notify_success = false;
 
-	function QdsmtpBase( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null( $param[0] ) && is_bool( $param[0] ) ){
 			$this->continue = $continue;
 		}
@@ -855,11 +853,11 @@ var $smtp_status= array(
 }
 
 class Qdsmtp extends QdsmtpBase{
-	function Qdsmtp( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
-		parent::QdsmtpBase( $param );
+		parent::__construct( $param );
 	}
 }
 //-------------------------------------------
@@ -873,11 +871,11 @@ class QdsmtpComponent extends QdsmtpBase{
 	var $template	= 'default';
 	var $view		= null;
 
-	function QdsmtpComponent( $param = null ){
+	function __construct( $param = null ){
 		if( !is_null($param)){
 			$param = func_get_args();
 		}
-		parent::QdsmtpBase( $param );
+		parent::__construct( $param );
 	}
 
 	function startup(&$controller) {
